@@ -1,0 +1,22 @@
+# Data files (too large for git — rebuild with pipeline scripts)
+data/dob_complaints.db
+data/open_data_raw.csv
+data/html_archive/
+data/scrape.log
+data/aux_download.log
+data/acris_download.log
+data/acris_legals_resume.log
+data/remaining_download.log
+
+# Node
+web/node_modules/
+web/.next/
+
+# Python
+__pycache__/
+*.pyc
+.DS_Store
+
+# Temp
+/tmp/
+*.tmp
