@@ -20,3 +20,18 @@ __pycache__/
 # Temp
 /tmp/
 *.tmp
+
+# Session/scratch artifacts (not part of replication package)
+.playwright-mcp/
+data/analysis/blog_posts/substack_segments/
+data/analysis/pilot_*.csv
+data/analysis/pilot_screenshots/
+data/analysis/master_panel.csv
+data/analysis/methodology_and_results*.html
+data/analysis/property_risk_panel.csv.gz
+data/*.log
+debug_bis_response.html
+data/dob_complaints.db-shm
+data/dob_complaints.db-wal
+data/exports/
+web/

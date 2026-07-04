@@ -22,7 +22,8 @@ import config
 PAGE_SIZE = 50_000
 
 
-def download_paginated(api_url, fields, table_name, conn, where_clause="", start_offset=0):
+def download_paginated(api_url, fields, table_name, conn, where_clause="",
+                       start_offset=0, out_fields=None):
     """Download from Socrata API with pagination."""
     existing = 0
     try:
@@ -59,10 +60,11 @@ def download_paginated(api_url, fields, table_name, conn, where_clause="", start
             break
 
         df = pd.DataFrame(rows)
-        for col in fields:
+        cols = out_fields or fields
+        for col in cols:
             if col not in df.columns:
                 df[col] = None
-        df = df[fields]
+        df = df[cols]
         df.to_sql(table_name, conn, if_exists="append", index=False)
 
         total += len(df)
@@ -96,11 +98,17 @@ def main():
         CREATE INDEX IF NOT EXISTS idx_acris_master_doc ON acris_master(document_id);
     """)
 
+    # NB: API field names are document_date / document_amt; alias them to the
+    # local schema (the original doc_date/doc_amount select 400'd and left
+    # this table empty).
     download_paginated(
         "https://data.cityofnewyork.us/resource/bnx9-e6tj.json",
-        ["document_id", "doc_type", "doc_date", "doc_amount", "recorded_datetime"],
+        ["document_id", "doc_type", "document_date AS doc_date",
+         "document_amt AS doc_amount", "recorded_datetime"],
         "acris_master", conn,
-        where_clause="doc_type IN ('DEED','DEEDO','DEEDP','DEED, TS')"
+        where_clause="doc_type IN ('DEED','DEEDO','DEEDP','DEED, TS')",
+        out_fields=["document_id", "doc_type", "doc_date", "doc_amount",
+                    "recorded_datetime"],
     )
 
     # ── 2. ACRIS Real Property Legals — map document_id → BBL ──────────
