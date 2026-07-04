@@ -35,3 +35,6 @@ data/dob_complaints.db-shm
 data/dob_complaints.db-wal
 data/exports/
 web/
+
+# Draft posts stay local
+data/analysis/blog_posts/

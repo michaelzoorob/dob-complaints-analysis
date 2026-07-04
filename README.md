@@ -22,8 +22,7 @@ python scripts/make_transition_figure.py
 python scripts/make_risk_figures.py
 ```
 
-Output PNGs land in `data/analysis/blog_posts/artifacts/` and are also
-committed for comparison.
+Output PNGs land in `data/analysis/blog_posts/artifacts/` (created if absent).
 
 **Tier 2 — model re-estimation (hours).** The property-level panel
 (`data/analysis/property_risk_panel_v2.csv.gz`, 460K individually owned
@@ -87,8 +86,6 @@ python scripts/add_owner_characteristics.py   # BISG probabilities
   public PLUTO owner names (input to the subgroup classification)
 - `data/analysis/sr311_*.csv.gz` — cached 311 Service Request pulls used by the
   antecedent analysis
-- `data/analysis/blog_posts/` — post sources (Markdown), rendered PDFs, and
-  figure PNGs in `artifacts/`
 
 ## Notes on the race measure
 
