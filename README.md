@@ -50,7 +50,8 @@ and outputs.
 **Tier 3 — full rebuild from public sources (days).** The raw database
 (`data/dob_complaints.db`, ~3M Open Data rows plus scraped BIS pages) is too
 large for git. A cached snapshot is available for direct download
-(2.7 GB gzipped, 8 GB unpacked; complete through May 2026):
+(2.8 GB gzipped, 8.1 GB unpacked; complaints complete through May 2026,
+both DOB violation ledgers included):
 
 ```bash
 curl -L -o dob_complaints.db.gz "https://www.dropbox.com/scl/fi/qzwctahl5gez47dvr65wv/dob_complaints.db.gz?rlkey=lbdqrauqkh7gc0toxuecurn4n&st=h5bmuxiu&dl=1"
