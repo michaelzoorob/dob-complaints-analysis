@@ -4,7 +4,11 @@ Reduced-form citation outcomes: administrative violations per year.
 Outcome = counts of actually-cited violations 2020 - Apr 2026 from the
 city's administrative ledgers, independent of the complaint pipeline:
   - n_ecb_2020on  : ECB/OATH violations (penalty-bearing, DOB-issued)
-  - n_dobviol_2020on : all DOB violations (incl. periodic/proactive)
+  - n_dobviol_2020on : all DOB violations (incl. periodic/proactive),
+    unioned across the BIS-era ledger (3h2n-5cm9) and the DOB NOW-era
+    ledger (855j-jady) with cross-system duplicates removed on
+    (bbl, issue date, type family) — see dob_ledger.py. A BIS-only variant
+    (ppml_dobviol_bis) is estimated for continuity with earlier runs.
 Window = 75 months (6.25 years); constant across lots, so PPML IRRs are
 unaffected and reported baselines are annualized.
 
@@ -25,6 +29,7 @@ import pyfixest as pf
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
+import dob_ledger
 from analysis_config import make_bbl
 
 PANEL = config.DATA_DIR / "analysis" / "property_risk_panel_v2.csv.gz"
@@ -60,21 +65,21 @@ def load_frame() -> pd.DataFrame:
         df[f"geo_{g}"] = (df["owner_geo"] == g).astype(int)
     df["multi_prop_owner"] = df["multi_prop_owner"].astype(int)
 
-    # fresh join: DOB violations issued 2020+
+    # fresh join: DOB violations issued 2020+ from BOTH ledgers, deduped
+    # across systems (BIS 3h2n-5cm9 + DOB NOW 855j-jady; see dob_ledger.py)
     conn = sqlite3.connect(str(config.DB_PATH))
-    dv = pd.read_sql_query("""
-        SELECT boro, block, lot, COUNT(*) AS n_dobviol_2020on
-        FROM dob_violations
-        WHERE length(issue_date) = 8
-          AND substr(issue_date,1,4) BETWEEN '2020' AND '2026'
-        GROUP BY boro, block, lot
-    """, conn)
+    u = dob_ledger.union_frame(conn, verbose=True)
     conn.close()
-    dv["bbl_key"] = [make_bbl(b, bl, lt) for b, bl, lt
-                     in zip(dv["boro"], dv["block"], dv["lot"])]
-    dv = dv[dv["bbl_key"] != ""].groupby("bbl_key", as_index=False)["n_dobviol_2020on"].sum()
-    df = df.merge(dv, on="bbl_key", how="left")
-    df["n_dobviol_2020on"] = df["n_dobviol_2020on"].fillna(0).astype(int)
+    u = u[(u["year"] >= 2020) & (u["year"] <= 2026)]
+    counts = (u.groupby(["bbl_key", "source"]).size().unstack(fill_value=0)
+              .rename(columns={"bis": "n_dobviol_bis_2020on",
+                               "dobnow": "n_dobnow_uniq_2020on"}).reset_index())
+    df = df.merge(counts, on="bbl_key", how="left")
+    for c in ["n_dobviol_bis_2020on", "n_dobnow_uniq_2020on"]:
+        if c not in df.columns:
+            df[c] = 0
+        df[c] = df[c].fillna(0).astype(int)
+    df["n_dobviol_2020on"] = df["n_dobviol_bis_2020on"] + df["n_dobnow_uniq_2020on"]
     df["any_dobviol100"] = (df["n_dobviol_2020on"] > 0).astype(int) * 100.0
     df["anyecb100"] = df["any_ecb_2020on"].astype(int) * 100.0
 
@@ -117,9 +122,13 @@ def main():
     m = pf.fepois(f"n_ecb_2020on ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
     collect(m, "ppml_ecb", "ECB citations 2020-26")
 
-    print("[2/6] PPML DOB violations (base spec)")
+    print("[2/6] PPML DOB violations, both ledgers deduped (base spec)")
     m = pf.fepois(f"n_dobviol_2020on ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
-    collect(m, "ppml_dobviol", "DOB violations 2020-26")
+    collect(m, "ppml_dobviol", "DOB violations 2020-26 (union)")
+
+    print("[2b/6] PPML DOB violations, BIS ledger only (continuity)")
+    m = pf.fepois(f"n_dobviol_bis_2020on ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    collect(m, "ppml_dobviol_bis", "DOB violations 2020-26 (BIS only)")
 
     print("[3/6] LPM any DOB violation")
     m = pf.feols(f"any_dobviol100 ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
@@ -153,7 +162,7 @@ def main():
     res.to_csv(OUT / "citation_tidy_estimates.csv", index=False)
     print(f"\nSaved -> {OUT/'citation_tidy_estimates.csv'}")
 
-    for name in ["ppml_ecb", "ppml_dobviol", "bisg_ppml_ecb"]:
+    for name in ["ppml_ecb", "ppml_dobviol", "ppml_dobviol_bis", "bisg_ppml_ecb"]:
         g = res[res["model"] == name]
         print(f"\n== {name} (N={g['n'].iloc[0]:,.0f}) ==")
         cols = [c for c in ["term", "estimate", "pct_change", "std_error", "pr(>|t|)"]
@@ -166,7 +175,8 @@ def main():
         d = df[mask]
         rows.append({"group": name, "n": len(d),
                      "ecb_per100_yr": d["n_ecb_2020on"].mean() / YEARS * 100,
-                     "dobviol_per100_yr": d["n_dobviol_2020on"].mean() / YEARS * 100})
+                     "dobviol_per100_yr": d["n_dobviol_2020on"].mean() / YEARS * 100,
+                     "dobviol_bis_per100_yr": d["n_dobviol_bis_2020on"].mean() / YEARS * 100})
     add("All residential", df["unitsres"] >= 0)
     add("LLC", df["llc"] == 1)
     add("Individual", df["owner_type"] == "individual")

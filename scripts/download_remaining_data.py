@@ -116,10 +116,10 @@ def main():
 
     # 3. DOB Safety Violations (new dataset)
     try:
-        safety_count = conn.execute("SELECT COUNT(*) FROM safety_violations").fetchone()[0]
+        safety_count = conn.execute("SELECT COUNT(*) FROM dob_safety_violations").fetchone()[0]
     except:
         conn.executescript("""
-            CREATE TABLE IF NOT EXISTS safety_violations (
+            CREATE TABLE IF NOT EXISTS dob_safety_violations (
                 violation_number TEXT,
                 violation_type TEXT,
                 violation_status TEXT,
@@ -137,9 +137,9 @@ def main():
                 latitude TEXT,
                 longitude TEXT
             );
-            CREATE INDEX IF NOT EXISTS idx_safety_bin ON safety_violations(bin);
-            CREATE INDEX IF NOT EXISTS idx_safety_bbl ON safety_violations(bbl);
-            CREATE INDEX IF NOT EXISTS idx_safety_date ON safety_violations(violation_issue_date);
+            CREATE INDEX IF NOT EXISTS idx_safety_bin ON dob_safety_violations(bin);
+            CREATE INDEX IF NOT EXISTS idx_safety_bbl ON dob_safety_violations(bbl);
+            CREATE INDEX IF NOT EXISTS idx_safety_date ON dob_safety_violations(violation_issue_date);
         """)
         safety_count = 0
 
@@ -153,7 +153,7 @@ def main():
         ]
         download_paginated(
             "https://data.cityofnewyork.us/resource/855j-jady.json",
-            safety_fields, "safety_violations", conn, start_offset=safety_count
+            safety_fields, "dob_safety_violations", conn, start_offset=safety_count
         )
     else:
         print(f"Safety violations already complete: {safety_count:,}")
@@ -162,7 +162,7 @@ def main():
     print(f"\n{'='*60}")
     print("FINAL COUNTS")
     print(f"{'='*60}")
-    for table in ["permits", "permits_now", "ecb_violations", "dob_violations", "safety_violations"]:
+    for table in ["permits", "permits_now", "ecb_violations", "dob_violations", "dob_safety_violations"]:
         try:
             count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
             print(f"  {table:25s}: {count:>12,} rows")

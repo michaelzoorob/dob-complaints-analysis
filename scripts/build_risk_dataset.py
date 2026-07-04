@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import config
+import dob_ledger
 from analysis_config import make_bbl, BOROUGH_NAME_TO_CODE
 from disposition_codes import classify_disposition
 
@@ -151,16 +152,12 @@ def load_violation_history(conn) -> pd.DataFrame:
             .groupby("bbl_key").size().rename("n_ecb_hist"))
     curr = (ecb[ecb["yr"] >= 2020].groupby("bbl_key").size().rename("n_ecb_2020on"))
 
-    dob = pd.read_sql_query(f"""
-        SELECT boro, block, lot, substr(issue_date,1,4) AS yr
-        FROM dob_violations
-        WHERE length(issue_date) = 8
-          AND CAST(substr(issue_date,1,4) AS INTEGER) BETWEEN {HISTORY_START} AND {HISTORY_END}
-    """, conn)
-    dob["bbl_key"] = [make_bbl(b, bl, lt) for b, bl, lt
-                      in zip(dob["boro"], dob["block"], dob["lot"])]
-    dob = dob[dob["bbl_key"] != ""]
-    dob_hist = dob.groupby("bbl_key").size().rename("n_dobviol_hist")
+    # DOB-ledger history from BOTH systems (BIS + DOB NOW), deduped across
+    # systems on (bbl, issue date, type family) — see dob_ledger.py. The
+    # DOB NOW dataset adds ~3% of 2010-19 rows beyond BIS and flips
+    # any_prior_viol for ~0.13% of residential lots.
+    dob_hist = dob_ledger.counts_by_bbl(conn, HISTORY_START, HISTORY_END,
+                                        "n_dobviol_hist")
 
     out = pd.concat([hist, curr, dob_hist], axis=1).fillna(0).reset_index()
     print(f"History: {len(out):,} lots with any ECB/DOB violation record; "

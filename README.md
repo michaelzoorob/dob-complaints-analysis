@@ -76,7 +76,9 @@ python scripts/add_owner_characteristics.py   # BISG probabilities
 - BIS Web complaint detail pages (scraped; parser in `parser.py`)
 - PLUTO / MapPLUTO (NYC Dept. of City Planning)
 - ACRIS deeds and parties (NYC Dept. of Finance)
-- ECB/OATH and DOB violation ledgers, NYC Open Data
+- ECB/OATH and DOB violation ledgers, NYC Open Data (`6bgk-3dad`, `3h2n-5cm9`,
+  and the DOB NOW-era `855j-jady`; the two DOB ledgers overlap across systems
+  and are deduplicated by `scripts/dob_ledger.py`)
 - 311 Service Requests 2010-present (`erm2-nwe9`)
 - ACS 5-year tables (tract demographics; tenure by race B25003;
   detailed Asian origin B02015; ancestry B04006)

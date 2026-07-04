@@ -3,7 +3,10 @@ Download auxiliary NYC Open Data datasets for the inspector leniency analysis:
 1. DOB Permits (rbx6-tga4) — 919K rows
 2. DOB NOW Permits (w9ak-ipjd) — 886K rows
 3. DOB ECB Violations (6bgk-3dad) — 1.8M rows
-4. DOB Violations (3h2n-5cm9) — 2.5M rows
+4. DOB Violations (3h2n-5cm9) — 2.5M rows (BIS-era ledger)
+5. DOB Safety Violations (855j-jady) — 1.1M rows (DOB NOW-era ledger; overlaps
+   the BIS ledger, so counting code must dedupe across systems — see
+   scripts/dob_ledger.py)
 
 All loaded into SQLite for joining with complaints on BBL (boro+block+lot) or BIN.
 """
@@ -169,6 +172,31 @@ DATASETS = {
             "violation_type_code", "violation_number", "house_number",
             "street", "disposition_comments", "description",
             "violation_category", "violation_type",
+        ],
+    },
+    "dob_safety_violations": {
+        "api": "https://data.cityofnewyork.us/resource/855j-jady.json",
+        "table": "dob_safety_violations",
+        "schema": """
+            CREATE TABLE IF NOT EXISTS dob_safety_violations (
+                violation_number TEXT,
+                violation_type TEXT,
+                violation_status TEXT,
+                device_type TEXT,
+                bin TEXT,
+                borough TEXT,
+                block TEXT,
+                lot TEXT,
+                bbl TEXT,
+                violation_issue_date TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_dsv_bbl ON dob_safety_violations(bbl);
+            CREATE INDEX IF NOT EXISTS idx_dsv_issue ON dob_safety_violations(violation_issue_date);
+        """,
+        "fields": [
+            "violation_number", "violation_type", "violation_status",
+            "device_type", "bin", "borough", "block", "lot", "bbl",
+            "violation_issue_date",
         ],
     },
 }
