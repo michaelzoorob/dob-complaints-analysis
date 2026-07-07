@@ -55,7 +55,7 @@ FACTORS = [  # display order (grouped), term -> short label
     ("era_pre1940", "Built before 1940 (vs. 2000+)"),
     ("era_4079", "Built 1940–79 (vs. 2000+)"),
     ("era_8099", "Built 1980–99 (vs. 2000+)"),
-    ("mixed_use", "Mixed use (commercial units)"),
+    ("com_class", "Commercial/mixed building class"),
     ("log2_area_per_unit", "Floor area per unit (per doubling)"),
     ("value_rank", "Assessed value, bottom→top of type"),
 ]
@@ -182,7 +182,7 @@ def two_margin(df: pd.DataFrame):
         "nycha": (10, -4, "left"),
         "era_pre1940": (10, 0, "left"),
         "era_8099": (0, 12, "center"),
-        "mixed_use": (10, -3, "left"),
+        "com_class": (10, -3, "left"),
         "value_rank": (10, -1, "left"),
         "geo_outside_nyc": (-10, -14, "right"),
         "multi_prop_owner": (-4, -16, "center"),

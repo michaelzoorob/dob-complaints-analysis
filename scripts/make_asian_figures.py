@@ -197,11 +197,14 @@ def fig3():
     for g in ["nyc_other", "outside_nyc", "unknown"]:
         df[f"geo_{g}"] = (df["owner_geo"] == g).astype(int)
     df["multi_prop_owner"] = df["multi_prop_owner"].astype(int)
+    _ba = pd.to_numeric(df["bldgarea"], errors="coerce")
+    df["log_bldgarea"] = np.log(_ba.where(_ba > 0))
+    df["com_class"] = df["bldgclass"].astype(str).str[0].isin(["S", "K", "O"]).astype(int)
     need = ["log2_area_per_unit", "value_rank", "size_bin", "bct2020"]
     df = df[df[need].notna().all(axis=1) & np.isfinite(df["log2_area_per_unit"])]
     bs = df[(df["owner_type"] == "individual") & (df["unitsres"] < 16) & df["p_white"].notna()]
     X = ("p_black + p_hispanic + p_asian + era_pre1940 + era_4079 + era_8099 + era_unknown"
-         " + mixed_use + mzone + multi_bldg + log2_area_per_unit + value_rank + any_prior_viol"
+         " + com_class + log_bldgarea + mzone + multi_bldg + log2_area_per_unit + value_rank + any_prior_viol"
          " + geo_nyc_other + geo_outside_nyc + geo_unknown + multi_prop_owner")
     occ = {}
     for flag, lab in [(True, "Owner-occupied (STAR)"), (False, "Absentee-owned")]:
@@ -228,8 +231,8 @@ def fig3():
                            gridspec_kw={"left": 0.28, "right": 0.95, "top": 0.79, "bottom": 0.09})
     ax.grid(axis="x", color=GRID, lw=0.8)
     ax.axvline(0, color=ZERO, lw=1.1)
-    ax.axvline(38, color=MUTED, lw=1.0, ls=(0, (1, 2)))
-    ax.text(38, len(rows) - 0.35, "all properties +38%", fontsize=8.5, color=MUTED,
+    ax.axvline(37, color=MUTED, lw=1.0, ls=(0, (1, 2)))
+    ax.text(37, len(rows) - 0.35, "all properties +37%", fontsize=8.5, color=MUTED,
             ha="center", va="bottom")
 
     ylabels, ypos = [], []

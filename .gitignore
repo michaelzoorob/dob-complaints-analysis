@@ -38,3 +38,12 @@ web/
 
 # Draft posts stay local
 data/analysis/blog_posts/
+
+# Session scratch, secrets, oversized artifacts
+cookies_dump.json
+bis_batch.json
+bis_validate.json
+/*.png
+data/dob_complaints.db.gz
+data/analysis/master_panel.csv
+data/analysis/spillover_frame.pkl

@@ -100,8 +100,8 @@ def fig_features():
     fig.suptitle("Text features of complaints and reports, predicted-Asian vs. white-owned",
                  x=0.02, y=0.975, ha="left", fontsize=12, color=INK, weight="semibold")
     fig.text(0.02, 0.938, "Effect of predicted-Asian ownership, within complaint code, census tract, and size class ·\n"
-                          "311-referenced complaints only · N = 83,674 with caller text; presence, length, and refusal\n"
-                          "rows use their own samples (137,638 / 70,636 / 50,884) · whiskers = 95% CI · hollow = n.s. ·\n"
+                          "311-referenced complaints only · N = 84,652 with caller text; presence, length, and refusal\n"
+                          "rows use their own samples (139,302 / 71,294 / 51,370) · whiskers = 95% CI · hollow = n.s. ·\n"
                           "bases are rates at white-owned homes",
              fontsize=9, color=MUTED, va="top")
     fig.savefig(ART / "asian_text_features.png", dpi=200)

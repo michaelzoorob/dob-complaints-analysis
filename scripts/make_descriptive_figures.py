@@ -62,7 +62,7 @@ def fig_timeline(conn):
         SELECT substr(o.date_entered,7,4)||'-'||substr(o.date_entered,1,2) AS ym, COUNT(*) n
         FROM open_data o JOIN bis_scrape b USING(complaint_number)
         GROUP BY 1 ORDER BY 1""", conn)
-    tl = tl[tl.ym <= "2026-04"]  # drop partial final month
+    tl = tl[tl.ym <= "2026-05"]  # window ends with complete May 2026
     x = pd.to_datetime(tl.ym + "-01")
     fig, ax = plt.subplots(figsize=(12.5, 5.2), dpi=160)
     ax.fill_between(x, tl.n, color=BLUE, alpha=0.10, linewidth=0)
@@ -72,7 +72,8 @@ def fig_timeline(conn):
     ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     ax.set_title("DOB complaints filed per month, 2020–2026", loc="left",
                  fontsize=15, fontweight="bold", color=INK, pad=14)
-    ax.text(0, 1.015, "774,944 complaints scraped from BIS Web · partial May 2026 excluded",
+    n_total = int(tl.n.sum())
+    ax.text(0, 1.015, f"{n_total:,} complaints scraped from BIS Web, January 2020 through May 2026",
             transform=ax.transAxes, fontsize=10.5, color=MUTED)
     covid = x[tl.ym.tolist().index("2020-04")]
     ax.annotate("COVID-19 pause", xy=(covid, tl.n[tl.ym == "2020-04"].iat[0]),
@@ -118,7 +119,7 @@ def fig_outcomes(conn):
         ax.spines[s].set_visible(False)
     ax.set_title("What happens to a DOB complaint", loc="left", fontsize=15,
                  fontweight="bold", color=INK, pad=26)
-    ax.text(-0.28, 1.045, "share of all 774,944 scraped complaints, 2020–May 2026",
+    ax.text(-0.28, 1.045, f"share of all {total:,} scraped complaints, 2020–May 2026",
             transform=ax.transAxes, fontsize=10.5, color=MUTED)
     fig.tight_layout()
     fig.savefig(ART / "desc_outcomes.png", bbox_inches="tight")

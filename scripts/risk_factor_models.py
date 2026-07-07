@@ -42,12 +42,14 @@ BUILDING_COVARS = [
     "llc", "corp_other", "trust_estate", "nycha", "govt",       # owner (ref: individual)
     "owner_occ_star", "is_coop", "is_condo",                    # tenure structure
     "era_pre1940", "era_4079", "era_8099", "era_unknown",       # era (ref: built 2000+)
-    "mixed_use", "mzone", "multi_bldg",
+    "mzone", "multi_bldg", "com_class", "log_bldgarea",         # commercial exposure: com_class + floor area (mixed_use dropped, subsumed by comm_bin FE)
     "log2_area_per_unit", "value_rank", "any_prior_viol",
 ]
 TRACT_COVARS = ["tract_poverty10", "tract_renter10", "tract_foreign10",
                 "tract_overcrowd10", "tract_log_income_z"]
 CAT_SHARES = ["sh_conv", "sh_constr", "sh_elev", "sh_boiler"]
+# comm_bin (commercial-unit-count FE, parallel to residential size_bin) enters as a FIXED EFFECT
+FE = "size_bin + comm_bin + bct2020"
 
 LABELS = {
     "llc": "LLC owner (vs individual)",
@@ -63,6 +65,8 @@ LABELS = {
     "era_8099": "Built 1980-1999 (vs 2000+)",
     "era_unknown": "Construction year unknown",
     "mixed_use": "Mixed use (commercial units)",
+    "com_class": "Commercial/mixed building class (S/K/O)",
+    "log_bldgarea": "Log total floor area",
     "mzone": "Manufacturing zoning",
     "multi_bldg": "Multiple buildings on lot",
     "log2_area_per_unit": "Floor area per unit (per doubling)",
@@ -97,6 +101,21 @@ def load_frame() -> pd.DataFrame:
 
     df["multi_bldg"] = (df["numbldgs"] >= 2).astype(int)
     df["log2_area_per_unit"] = np.log2(df["area_per_unit"])
+
+    # commercial exposure controls (ported from owner_commercial_sensitivity.py, spec 2b+):
+    # commercial units = max(unitstotal-unitsres,0), binned SYMMETRICALLY to residential
+    # size_bin (exact 0..10 then coarse) and entered as comm_bin FIXED EFFECTS; plus a
+    # storefront/office/mixed building-CLASS dummy (bldgclass S/K/O) and log total floor area.
+    ut = pd.to_numeric(df["unitstotal"], errors="coerce")
+    ur = pd.to_numeric(df["unitsres"], errors="coerce")
+    df["unitscom"] = np.maximum(ut - ur, 0).fillna(0.0)
+    comm_bins = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 25, 50, 100, 250, 100000]
+    comm_labels = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                   "11-15", "16-25", "26-50", "51-100", "101-250", "251+"]
+    df["comm_bin"] = pd.cut(df["unitscom"], bins=comm_bins, labels=comm_labels).astype(str)
+    ba = pd.to_numeric(df["bldgarea"], errors="coerce")
+    df["log_bldgarea"] = np.log(ba.where(ba > 0))
+    df["com_class"] = df["bldgclass"].astype(str).str[0].isin(["S", "K", "O"]).astype(int)
 
     # outcomes in interpretable units
     df["any100"] = df["any_complaint"] * 100.0
@@ -149,69 +168,69 @@ def run_models(df: pd.DataFrame):
     XT = X + " + " + " + ".join(TRACT_COVARS)
 
     print("\n[1/10] Tier-1 LPM any complaint (borough FE + tract covariates)")
-    m = pf.feols(f"any100 ~ {XT} | size_bin + borocode", data=df, vcov=vcov)
+    m = pf.feols(f"any100 ~ {XT} | size_bin + comm_bin + borocode", data=df, vcov=vcov)
     collect(m, "tier1_lpm_any", "any complaint (pp)", "pp", "universe")
 
     print("[2/10] Tier-2 LPM any complaint (tract FE)")
-    m = pf.feols(f"any100 ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.feols(f"any100 ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "tract_lpm_any", "any complaint (pp)", "pp", "universe")
 
     print("[3/10] Tier-2 PPML complaint count (tract FE)")
-    m = pf.fepois(f"n_complaints ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_complaints ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "tract_ppml_ncomp", "complaint count", "log", "universe")
 
     print("[4/10] Tier-2 LPM any disposition-violation")
-    m = pf.feols(f"anyviol100 ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.feols(f"anyviol100 ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "tract_lpm_anyviol", "any violation (pp)", "pp", "universe")
 
     print("[5/10] Tier-2 PPML violation count")
-    m = pf.fepois(f"n_viol_disp ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_viol_disp ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "tract_ppml_nviol", "violation count", "log", "universe")
 
     print("[6/10] Tier-2 LPM any ECB violation (administrative)")
-    m = pf.feols(f"anyecb100 ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.feols(f"anyecb100 ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "tract_lpm_anyecb", "any ECB violation (pp)", "pp", "universe")
 
     print("[7/10] Conditional: violation rate per substantive inspection (wtd)")
     sub = df[df["n_substantive"] > 0]
-    m = pf.feols(f"violrate100 ~ {X} | size_bin + bct2020", data=sub,
+    m = pf.feols(f"violrate100 ~ {X} | {FE}", data=sub,
                  weights="n_substantive", vcov=vcov)
     collect(m, "cond_violrate", "violations per inspection (pp)", "pp", "inspected")
-    m = pf.feols(f"violrate100 ~ {X} + {' + '.join(CAT_SHARES)} | size_bin + bct2020",
+    m = pf.feols(f"violrate100 ~ {X} + {' + '.join(CAT_SHARES)} | {FE}",
                  data=sub, weights="n_substantive", vcov=vcov)
     collect(m, "cond_violrate_catadj", "violations per inspection, category-adjusted (pp)",
             "pp", "inspected")
 
     print("[8/10] Conditional: no-access rate per complaint (wtd)")
     sub = df[df["n_complaints"] > 0]
-    m = pf.feols(f"noaccrate100 ~ {X} | size_bin + bct2020", data=sub,
+    m = pf.feols(f"noaccrate100 ~ {X} | {FE}", data=sub,
                  weights="n_complaints", vcov=vcov)
     collect(m, "cond_noaccess", "no-access per complaint (pp)", "pp", "complained")
 
     print("[9/10] Strata: 2-4 units, 1 unit")
     s24 = df[df["unitsres"].between(2, 4)]
-    m = pf.feols(f"any100 ~ {X} | size_bin + bct2020", data=s24, vcov=vcov)
+    m = pf.feols(f"any100 ~ {X} | {FE}", data=s24, vcov=vcov)
     collect(m, "strata24_lpm_any", "any complaint (pp)", "pp", "2-4 units")
-    m = pf.fepois(f"n_complaints ~ {X} | size_bin + bct2020", data=s24, vcov=vcov)
+    m = pf.fepois(f"n_complaints ~ {X} | {FE}", data=s24, vcov=vcov)
     collect(m, "strata24_ppml", "complaint count", "log", "2-4 units")
     s1 = df[df["unitsres"] == 1]
     x1 = " + ".join([c for c in BUILDING_COVARS if c not in
                      ("is_coop", "is_condo", "nycha")])  # not identified in 1-unit
-    m = pf.feols(f"any100 ~ {x1} | bct2020", data=s1, vcov=vcov)
+    m = pf.feols(f"any100 ~ {x1} | comm_bin + bct2020", data=s1, vcov=vcov)
     collect(m, "strata1_lpm_any", "any complaint (pp)", "pp", "1 unit")
 
     print("[10/10] Category-specific PPML + private-only robustness")
-    m = pf.fepois(f"n_conv ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_conv ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "ppml_conversion", "illegal-conversion complaints", "log", "universe")
-    m = pf.fepois(f"n_constr ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_constr ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "ppml_construction", "construction complaints", "log", "universe")
     priv = df[(df["owner_type"].isin(["individual", "llc", "corp_other", "trust_estate"]))
               & (df["is_condo"] == 0) & (df["is_coop"] == 0)]
     xp = " + ".join([c for c in BUILDING_COVARS if c not in
                      ("is_coop", "is_condo", "nycha", "govt")])
-    m = pf.feols(f"any100 ~ {xp} | size_bin + bct2020", data=priv, vcov=vcov)
+    m = pf.feols(f"any100 ~ {xp} | {FE}", data=priv, vcov=vcov)
     collect(m, "private_lpm_any", "any complaint (pp)", "pp", "private non-condo")
-    m = pf.fepois(f"n_complaints ~ {xp} | size_bin + bct2020", data=priv, vcov=vcov)
+    m = pf.fepois(f"n_complaints ~ {xp} | {FE}", data=priv, vcov=vcov)
     collect(m, "private_ppml", "complaint count", "log", "private non-condo")
 
 

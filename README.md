@@ -2,7 +2,7 @@
 
 Data and code for a series of analyses of New York City's complaint-driven
 building code enforcement, including the study of predicted-Asian-owned homes
-described in the accompanying blog post. The pipeline joins ~775,000 DOB
+described in the accompanying blog post. The pipeline joins ~783,000 DOB
 complaint records (NYC Open Data) to the detailed narratives and outcomes on
 the city's BIS portal, links every complaint to a PLUTO tax lot, predicts
 owner race from surnames and geography (BISG), and estimates enforcement gaps

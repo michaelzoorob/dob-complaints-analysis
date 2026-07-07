@@ -31,10 +31,12 @@ BUILDING_COVARS = [
     "llc", "corp_other", "trust_estate", "nycha", "govt",
     "owner_occ_star", "is_coop", "is_condo",
     "era_pre1940", "era_4079", "era_8099", "era_unknown",
-    "mixed_use", "mzone", "multi_bldg",
+    "mzone", "multi_bldg", "com_class", "log_bldgarea",  # commercial exposure: com_class + total floor area (mixed_use dropped, subsumed by comm_bin FE)
     "log2_area_per_unit", "value_rank", "any_prior_viol",
 ]
 OWNER_COVARS = ["geo_nyc_other", "geo_outside_nyc", "geo_unknown", "multi_prop_owner"]
+# comm_bin (commercial-unit-count FE, parallel to residential size_bin) enters as a FIXED EFFECT
+FE = "size_bin + comm_bin + bct2020"
 CAT_SHARES = ["sh_conv", "sh_constr", "sh_elev", "sh_boiler"]
 RACE = ["p_black", "p_hispanic", "p_asian"]
 RACE_SN = ["sn_black", "sn_hispanic", "sn_asian"]
@@ -54,6 +56,22 @@ def load_frame() -> pd.DataFrame:
     df["era_unknown"] = (~yb.between(1800, 2026)).astype(int)
     df["multi_bldg"] = (df["numbldgs"] >= 2).astype(int)
     df["log2_area_per_unit"] = np.log2(df["area_per_unit"])
+
+    # commercial exposure controls (ported from owner_commercial_sensitivity.py, spec 2b+):
+    # commercial units = max(unitstotal-unitsres,0), binned SYMMETRICALLY to residential
+    # size_bin (exact 0..10 then coarse) and entered as comm_bin FIXED EFFECTS; plus a
+    # storefront/office/mixed building-CLASS dummy (bldgclass S/K/O) and log total floor area.
+    ut = pd.to_numeric(df["unitstotal"], errors="coerce")
+    ur = pd.to_numeric(df["unitsres"], errors="coerce")
+    df["unitscom"] = np.maximum(ut - ur, 0).fillna(0.0)
+    comm_bins = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 25, 50, 100, 250, 100000]
+    comm_labels = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                   "11-15", "16-25", "26-50", "51-100", "101-250", "251+"]
+    df["comm_bin"] = pd.cut(df["unitscom"], bins=comm_bins, labels=comm_labels).astype(str)
+    ba = pd.to_numeric(df["bldgarea"], errors="coerce")
+    df["log_bldgarea"] = np.log(ba.where(ba > 0))
+    df["com_class"] = df["bldgclass"].astype(str).str[0].isin(["S", "K", "O"]).astype(int)
+
     df["any100"] = df["any_complaint"] * 100.0
     df["anyviol100"] = df["any_viol_disp"] * 100.0
     df["anyecb100"] = df["any_ecb_2020on"] * 100.0
@@ -96,26 +114,26 @@ def main():
     X = " + ".join(BUILDING_COVARS + OWNER_COVARS)
 
     print("[1/7] PPML complaint count + owner covars")
-    m = pf.fepois(f"n_complaints ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_complaints ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "owner_ppml_ncomp", "complaint count (log)", "universe")
 
     print("[2/7] LPM any complaint + owner covars")
-    m = pf.feols(f"any100 ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.feols(f"any100 ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "owner_lpm_any", "any complaint (pp)", "universe")
 
     print("[3/7] conditional violation rate + owner covars (wtd, cat-adjusted)")
     sub = df[df["n_substantive"] > 0]
-    m = pf.feols(f"violrate100 ~ {X} + {' + '.join(CAT_SHARES)} | size_bin + bct2020",
+    m = pf.feols(f"violrate100 ~ {X} + {' + '.join(CAT_SHARES)} | {FE}",
                  data=sub, weights="n_substantive", vcov=vcov)
     collect(m, "owner_cond_violrate", "violations per inspection (pp)", "inspected")
 
     print("[4/7] LPM any ECB violation + owner covars")
-    m = pf.feols(f"anyecb100 ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.feols(f"anyecb100 ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "owner_lpm_anyecb", "any ECB violation (pp)", "universe")
 
     print("[5/7] unweighted conditional robustness (base covars)")
     xb = " + ".join(BUILDING_COVARS)
-    m = pf.feols(f"violrate100 ~ {xb} + {' + '.join(CAT_SHARES)} | size_bin + bct2020",
+    m = pf.feols(f"violrate100 ~ {xb} + {' + '.join(CAT_SHARES)} | {FE}",
                  data=sub, vcov=vcov)
     collect(m, "cond_violrate_catadj_unwtd", "violations per inspection (pp, unwtd)", "inspected")
 
@@ -123,29 +141,35 @@ def main():
     bs = df[df["p_white"].notna() & (df["owner_type"] == "individual")
             & (df["unitsres"] < 16)].copy()
     print(f"[6/7] BISG subsample models (N={len(bs):,})")
-    xr = " + ".join([c for c in BUILDING_COVARS if c not in
-                     ("llc", "corp_other", "trust_estate", "nycha", "govt",
-                      "is_coop", "is_condo")] + OWNER_COVARS)
-    m = pf.fepois(f"n_complaints ~ {' + '.join(RACE)} + {xr} | size_bin + bct2020",
+    # BISG/race robustness now uses the commercial-exposure controls (com_class +
+    # log_bldgarea, dropping the binary mixed_use flag) in its building block, keeping the
+    # original FE, to stay consistent with the corrected race scripts
+    # (asian_effect_heterogeneity.py etc.).
+    bisg_bc = ["owner_occ_star", "era_pre1940", "era_4079", "era_8099", "era_unknown",
+               "com_class", "log_bldgarea", "mzone", "multi_bldg", "log2_area_per_unit",
+               "value_rank", "any_prior_viol"]
+    xr = " + ".join(bisg_bc + OWNER_COVARS)
+    bisg_FE = "size_bin + bct2020"
+    m = pf.fepois(f"n_complaints ~ {' + '.join(RACE)} + {xr} | {bisg_FE}",
                   data=bs, vcov=vcov)
     collect(m, "bisg_ppml_ncomp", "complaint count (log)", "individual <16u")
-    m = pf.feols(f"any100 ~ {' + '.join(RACE)} + {xr} | size_bin + bct2020",
+    m = pf.feols(f"any100 ~ {' + '.join(RACE)} + {xr} | {bisg_FE}",
                  data=bs, vcov=vcov)
     collect(m, "bisg_lpm_any", "any complaint (pp)", "individual <16u")
     bss = bs[bs["n_substantive"] > 0]
     m = pf.feols(f"violrate100 ~ {' + '.join(RACE)} + {xr} + {' + '.join(CAT_SHARES)}"
-                 f" | size_bin + bct2020", data=bss, weights="n_substantive", vcov=vcov)
+                 f" | {bisg_FE}", data=bss, weights="n_substantive", vcov=vcov)
     collect(m, "bisg_cond_violrate", "violations per inspection (pp)", "individual <16u")
-    m = pf.feols(f"anyecb100 ~ {' + '.join(RACE)} + {xr} | size_bin + bct2020",
+    m = pf.feols(f"anyecb100 ~ {' + '.join(RACE)} + {xr} | {bisg_FE}",
                  data=bs, vcov=vcov)
     collect(m, "bisg_lpm_anyecb", "any ECB violation (pp)", "individual <16u")
 
     print("[7/7] BISG surname-only robustness")
-    m = pf.fepois(f"n_complaints ~ {' + '.join(RACE_SN)} + {xr} | size_bin + bct2020",
+    m = pf.fepois(f"n_complaints ~ {' + '.join(RACE_SN)} + {xr} | {bisg_FE}",
                   data=bs, vcov=vcov)
     collect(m, "bisg_sn_ppml_ncomp", "complaint count (log)", "individual <16u")
     m = pf.feols(f"violrate100 ~ {' + '.join(RACE_SN)} + {xr} + {' + '.join(CAT_SHARES)}"
-                 f" | size_bin + bct2020", data=bss, weights="n_substantive", vcov=vcov)
+                 f" | {bisg_FE}", data=bss, weights="n_substantive", vcov=vcov)
     collect(m, "bisg_sn_cond_violrate", "violations per inspection (pp)", "individual <16u")
 
     res = pd.concat(RESULTS, ignore_index=True)

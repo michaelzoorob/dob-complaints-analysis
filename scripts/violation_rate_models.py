@@ -40,10 +40,12 @@ BUILDING_COVARS = [
     "llc", "corp_other", "trust_estate", "nycha", "govt",
     "owner_occ_star", "is_coop", "is_condo",
     "era_pre1940", "era_4079", "era_8099", "era_unknown",
-    "mixed_use", "mzone", "multi_bldg",
+    "mzone", "multi_bldg", "com_class", "log_bldgarea",  # commercial exposure: com_class + total floor area (mixed_use dropped, subsumed by comm_bin FE)
     "log2_area_per_unit", "value_rank", "any_prior_viol",
 ]
 OWNER_COVARS = ["geo_nyc_other", "geo_outside_nyc", "geo_unknown", "multi_prop_owner"]
+# comm_bin (commercial-unit-count FE, parallel to residential size_bin) enters as a FIXED EFFECT
+FE = "size_bin + comm_bin + bct2020"
 
 
 def load_frame() -> pd.DataFrame:
@@ -61,13 +63,30 @@ def load_frame() -> pd.DataFrame:
     df["era_unknown"] = (~yb.between(1800, 2026)).astype(int)
     df["multi_bldg"] = (df["numbldgs"] >= 2).astype(int)
     df["log2_area_per_unit"] = np.log2(df["area_per_unit"])
+
+    # commercial exposure controls (ported from owner_commercial_sensitivity.py, spec 2b+):
+    # commercial units = max(unitstotal-unitsres,0), binned SYMMETRICALLY to residential
+    # size_bin (exact 0..10 then coarse) and entered as comm_bin FIXED EFFECTS; plus a
+    # storefront/office/mixed building-CLASS dummy (bldgclass S/K/O) and log total floor area.
+    ut = pd.to_numeric(df["unitstotal"], errors="coerce")
+    ur = pd.to_numeric(df["unitsres"], errors="coerce")
+    df["unitscom"] = np.maximum(ut - ur, 0).fillna(0.0)
+    comm_bins = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 25, 50, 100, 250, 100000]
+    comm_labels = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                   "11-15", "16-25", "26-50", "51-100", "101-250", "251+"]
+    df["comm_bin"] = pd.cut(df["unitscom"], bins=comm_bins, labels=comm_labels).astype(str)
+    ba = pd.to_numeric(df["bldgarea"], errors="coerce")
+    df["log_bldgarea"] = np.log(ba.where(ba > 0))
+    df["com_class"] = df["bldgclass"].astype(str).str[0].isin(["S", "K", "O"]).astype(int)
+
     for g in ["nyc_other", "outside_nyc", "unknown"]:
         df[f"geo_{g}"] = (df["owner_geo"] == g).astype(int)
     df["multi_prop_owner"] = df["multi_prop_owner"].astype(int)
 
     # fresh join: DOB violations issued 2020+ from BOTH ledgers, deduped
     # across systems (BIS 3h2n-5cm9 + DOB NOW 855j-jady; see dob_ledger.py)
-    conn = sqlite3.connect(str(config.DB_PATH))
+    conn = sqlite3.connect(str(config.DB_PATH), timeout=60)  # busy timeout: live scrape may hold write lock
+    conn.execute("PRAGMA busy_timeout=60000;")
     u = dob_ledger.union_frame(conn, verbose=True)
     conn.close()
     u = u[(u["year"] >= 2020) & (u["year"] <= 2026)]
@@ -119,42 +138,47 @@ def main():
     XO = " + ".join(BUILDING_COVARS + OWNER_COVARS)
 
     print("[1/6] PPML ECB citations (base spec)")
-    m = pf.fepois(f"n_ecb_2020on ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_ecb_2020on ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "ppml_ecb", "ECB citations 2020-26")
 
     print("[2/6] PPML DOB violations, both ledgers deduped (base spec)")
-    m = pf.fepois(f"n_dobviol_2020on ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_dobviol_2020on ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "ppml_dobviol", "DOB violations 2020-26 (union)")
 
     print("[2b/6] PPML DOB violations, BIS ledger only (continuity)")
-    m = pf.fepois(f"n_dobviol_bis_2020on ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_dobviol_bis_2020on ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "ppml_dobviol_bis", "DOB violations 2020-26 (BIS only)")
 
     print("[3/6] LPM any DOB violation")
-    m = pf.feols(f"any_dobviol100 ~ {X} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.feols(f"any_dobviol100 ~ {X} | {FE}", data=df, vcov=vcov)
     collect(m, "lpm_any_dobviol", "any DOB violation (pp)")
 
     print("[4/6] PPML ECB citations (owner-augmented)")
-    m = pf.fepois(f"n_ecb_2020on ~ {XO} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_ecb_2020on ~ {XO} | {FE}", data=df, vcov=vcov)
     collect(m, "ppml_ecb_owner", "ECB citations 2020-26")
 
     print("[5/6] PPML DOB violations (owner-augmented)")
-    m = pf.fepois(f"n_dobviol_2020on ~ {XO} | size_bin + bct2020", data=df, vcov=vcov)
+    m = pf.fepois(f"n_dobviol_2020on ~ {XO} | {FE}", data=df, vcov=vcov)
     collect(m, "ppml_dobviol_owner", "DOB violations 2020-26")
 
     print("[6/7] BISG subsample: PPML ECB citations")
     bs = df[df["p_white"].notna() & (df["owner_type"] == "individual")
             & (df["unitsres"] < 16)]
-    xr = " + ".join([c for c in BUILDING_COVARS if c not in
-                     ("llc", "corp_other", "trust_estate", "nycha", "govt",
-                      "is_coop", "is_condo")] + OWNER_COVARS)
+    # BISG/race robustness now uses the commercial-exposure controls (com_class +
+    # log_bldgarea, dropping the binary mixed_use flag) in its building block, keeping the
+    # original FE, consistent with the corrected race scripts.
+    bisg_bc = ["owner_occ_star", "era_pre1940", "era_4079", "era_8099", "era_unknown",
+               "com_class", "log_bldgarea", "mzone", "multi_bldg", "log2_area_per_unit",
+               "value_rank", "any_prior_viol"]
+    xr = " + ".join(bisg_bc + OWNER_COVARS)
+    bisg_FE = "size_bin + bct2020"
     m = pf.fepois(f"n_ecb_2020on ~ p_black + p_hispanic + p_asian + {xr}"
-                  f" | size_bin + bct2020", data=bs, vcov=vcov)
+                  f" | {bisg_FE}", data=bs, vcov=vcov)
     collect(m, "bisg_ppml_ecb", "ECB citations 2020-26")
 
     print("[7/7] BISG subsample: PPML disposition violations")
     m = pf.fepois(f"n_viol_disp ~ p_black + p_hispanic + p_asian + {xr}"
-                  f" | size_bin + bct2020", data=bs, vcov=vcov)
+                  f" | {bisg_FE}", data=bs, vcov=vcov)
     collect(m, "bisg_ppml_viol", "disposition violations 2020-26")
 
     res = pd.concat(RESULTS, ignore_index=True)

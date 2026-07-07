@@ -28,6 +28,12 @@ def parse_bis_detail(html: str) -> dict:
         return {"_parse_status": "not_found", "_parse_error": "blank keys error"}
     if 'No record found' in html or 'no record found' in html.lower():
         return {"_parse_status": "not_found", "_parse_error": "no record found"}
+    # BIS "not found" variant: the page still renders the Overview shell but the
+    # title has an EMPTY complaint number ("Overview for Complaint #: =").
+    # This passes the 'Overview for Complaint' check below and then fails the
+    # strict title regex, so without this guard it is misclassified as 'error'.
+    if 'Overview for Complaint #: =' in html:
+        return {"_parse_status": "not_found", "_parse_error": "empty complaint number (no BIS record)"}
     if '<title>' not in html or 'Overview for Complaint' not in html:
         return {"_parse_status": "error", "_parse_error": "unexpected page format"}
 

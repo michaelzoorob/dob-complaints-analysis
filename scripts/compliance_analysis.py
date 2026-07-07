@@ -62,6 +62,17 @@ def main():
     print(f"  {len(df):,} observations, {df.shape[1]} columns")
     print()
 
+    # Attach NTA (neighborhood tabulation area) from the spatial join table
+    import sqlite3
+    conn = sqlite3.connect(str(config.DB_PATH))
+    nta = pd.read_sql_query("SELECT complaint_number, nta FROM complaint_nta", conn)
+    conn.close()
+    df["complaint_number"] = df["complaint_number"].astype(str)
+    nta["complaint_number"] = nta["complaint_number"].astype(str)
+    df = df.merge(nta, on="complaint_number", how="left")
+    print(f"  NTA matched: {df['nta'].notna().mean():.1%} of rows, {df['nta'].nunique()} NTAs")
+    print()
+
     # Build FE groups
     df["cat_unit"] = df["category_description"].fillna("UNK") + "|" + df["assigned_to"].fillna("UNK")
     df["cat_unit_ym"] = df["cat_unit"] + "|" + df["year_month"].fillna("UNK")
@@ -206,8 +217,8 @@ def main():
         ("Category × Unit", df["cat_unit"].values),
         ("Category × Unit × YM", df["cat_unit_ym"].values),
         ("+ Borough", (df["cat_unit_ym"].astype(str) + "|" + df["borough"].fillna("").astype(str)).values),
-        ("+ Community Board",
-         (df["cat_unit_ym"].astype(str) + "|" + df["community_board"].fillna("").astype(str)).values),
+        ("+ NTA (neighborhood)",
+         (df["cat_unit_ym"].astype(str) + "|" + df["nta"].fillna("UNK").astype(str)).values),
     ]
 
     print(f"  {'Specification':<40} {'β':>8} {'SE':>8} {'t':>8} {'FE groups':>12}")

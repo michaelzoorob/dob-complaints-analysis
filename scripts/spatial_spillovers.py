@@ -1,241 +1,245 @@
 """
-Spatial Spillover Analysis: Does strict enforcement at one property
-induce compliance at nearby properties?
+Spatial Spillover Analysis: does strict enforcement at one property predict
+permit filings or new ECB violations at same-tax-block neighbors?
 
 Design:
-- For each inspected property, identify neighbors (same block)
-- Measure whether neighbors file more permits or receive fewer violations
-  after a strict inspector visits the focal property
-- Use the same LOO inspector strictness instrument
+- For each substantively inspected property, neighbors = all other PLUTO lots
+  on the same tax block.
+- Outcomes: neighbor permit filings and neighbor ECB violations within
+  90/180/365 days after the focal inspection, plus the share of neighbor
+  lots with at least one permit.
+- Treatment: the focal inspector's leave-one-out strictness.
+- Inference: standard errors clustered by focal inspector (strictness varies
+  across ~640 inspectors, so unclustered SEs are drastically overconfident).
 
-Key outcome: neighbor permit filings within 90/180/365 days
+Implementation notes: neighbor counts are computed with per-block
+numpy.searchsorted over pre-sorted event-date arrays (no Python loop over
+inspections), which runs in seconds; the assembled analysis frame is cached
+to data/analysis/spillover_frame.pkl for re-analysis.
 """
 
-import sqlite3, sys, numpy as np, pandas as pd
+import sqlite3
+import sys
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
 from disposition_codes import classify_disposition
 
-conn = sqlite3.connect(str(config.DB_PATH), timeout=30)
+WINDOWS = [90, 180, 365]
+CACHE = config.DATA_DIR / "analysis" / "spillover_frame.pkl"
+BC = ("CASE b.borough WHEN 'MANHATTAN' THEN '1' WHEN 'BRONX' THEN '2' "
+      "WHEN 'BROOKLYN' THEN '3' WHEN 'QUEENS' THEN '4' WHEN 'STATEN ISLAND' THEN '5' END")
+BC_MAP = {"MANHATTAN": "1", "BRONX": "2", "BROOKLYN": "3", "QUEENS": "4", "STATEN ISLAND": "5"}
 
-BC = "CASE b.borough WHEN 'MANHATTAN' THEN '1' WHEN 'BRONX' THEN '2' WHEN 'BROOKLYN' THEN '3' WHEN 'QUEENS' THEN '4' WHEN 'STATEN ISLAND' THEN '5' END"
 
-# ── Load focal complaints ───────────────────────────────────────────────
-print("Loading focal complaints...", flush=True)
-df = pd.read_sql_query(f"""
-    SELECT o.complaint_number, o.disposition_code, o.date_entered, o.inspection_date,
-           o.community_board, b.borough, b.category_description, b.assigned_to,
-           b.inspector_badge, b.priority, b.block, b.lot, cn.nta,
-           p.latitude, p.longitude
-    FROM open_data o
-    JOIN bis_scrape b ON o.complaint_number = b.complaint_number
-    JOIN complaint_nta cn ON cn.complaint_number = o.complaint_number
-    LEFT JOIN pluto p ON p.borocode = {BC} AND p.block = b.block AND p.lot = b.lot
-    WHERE b.inspector_badge IS NOT NULL
-      AND o.disposition_code IS NOT NULL AND o.disposition_code != ''
-      AND b.block IS NOT NULL AND b.lot IS NOT NULL
-""", conn)
+def _bbl(boro: pd.Series, block: pd.Series, lot: pd.Series) -> pd.Series:
+    """Vectorized 10-digit BBL from string/float parts; empty string when invalid."""
+    b = pd.to_numeric(block, errors="coerce")
+    l = pd.to_numeric(lot, errors="coerce")
+    ok = boro.notna() & b.notna() & l.notna()
+    out = pd.Series("", index=boro.index, dtype=object)
+    out[ok] = (boro[ok].astype(str)
+               + b[ok].astype(int).astype(str).str.zfill(5)
+               + l[ok].astype(int).astype(str).str.zfill(4))
+    return out
 
-df["outcome"] = df["disposition_code"].apply(classify_disposition)
-df["violation_found"] = (df["outcome"] == "violation").astype(int)
-df["inspection_dt"] = pd.to_datetime(df["inspection_date"], format="%m/%d/%Y", errors="coerce")
-df["year_month"] = pd.to_datetime(df["date_entered"], format="%m/%d/%Y", errors="coerce").dt.to_period("M").astype(str)
 
-bc_map = {"MANHATTAN":"1","BRONX":"2","BROOKLYN":"3","QUEENS":"4","STATEN ISLAND":"5"}
-df["boro_code"] = df["borough"].map(bc_map)
-df["bbl"] = df.apply(lambda r: f"{r['boro_code']}{int(r['block']):05d}{int(r['lot']):04d}"
-    if pd.notna(r['boro_code']) and pd.notna(r['block']) and pd.notna(r['lot']) and r['block']!='' and r['lot']!=''
-    else "", axis=1)
-df["boro_block"] = df["boro_code"].astype(str) + "_" + df["block"].astype(str)
+def load_focal(conn) -> pd.DataFrame:
+    """Substantive inspections with LOO strictness, BBL, and block key."""
+    df = pd.read_sql_query(f"""
+        SELECT o.complaint_number, o.disposition_code, o.date_entered, o.inspection_date,
+               b.borough, b.category_description, b.assigned_to,
+               b.inspector_badge, b.block, b.lot, cn.nta
+        FROM open_data o
+        JOIN bis_scrape b ON o.complaint_number = b.complaint_number
+        JOIN complaint_nta cn ON cn.complaint_number = o.complaint_number
+        WHERE b.inspector_badge IS NOT NULL
+          AND o.disposition_code IS NOT NULL AND o.disposition_code != ''
+          AND b.block IS NOT NULL AND b.lot IS NOT NULL
+    """, conn)
+    df["outcome"] = df["disposition_code"].apply(classify_disposition)
+    df["violation_found"] = (df["outcome"] == "violation").astype(int)
+    df["inspection_dt"] = pd.to_datetime(df["inspection_date"], format="%m/%d/%Y", errors="coerce")
+    df["year_month"] = pd.to_datetime(df["date_entered"], format="%m/%d/%Y",
+                                      errors="coerce").dt.to_period("M").astype(str)
+    df["boro_code"] = df["borough"].map(BC_MAP)
+    df["bbl"] = _bbl(df["boro_code"], df["block"], df["lot"])
+    blk = pd.to_numeric(df["block"], errors="coerce")
+    df["boro_block"] = df["boro_code"].astype(str) + "_" + blk.astype("Int64").astype(str)
 
-# Analysis sample
-sub = df[df["outcome"].isin(["violation","no_violation"])].copy()
-counts = sub["inspector_badge"].value_counts()
-sub = sub[sub["inspector_badge"].isin(counts[counts>=30].index)]
+    sub = df[df["outcome"].isin(["violation", "no_violation"])].copy()
+    counts = sub["inspector_badge"].value_counts()
+    sub = sub[sub["inspector_badge"].isin(counts[counts >= 30].index)]
+    stats = sub.groupby("inspector_badge")["violation_found"].agg(["sum", "count"])
+    sub = sub.merge(stats.rename(columns={"sum": "tv", "count": "tn"}), on="inspector_badge")
+    sub["loo"] = (sub["tv"] - sub["violation_found"]) / (sub["tn"] - 1)
+    sub = sub.drop(columns=["tv", "tn"]).dropna(subset=["inspection_dt"])
+    # drop a handful of corrupt pre-2019 inspection dates in a 2020+ entered sample
+    sub = sub[sub["inspection_dt"] >= "2019-01-01"]
+    print(f"Focal sample: {len(sub):,} complaints across {sub['bbl'].nunique():,} BBLs, "
+          f"{sub['boro_block'].nunique():,} blocks")
+    return sub
 
-stats = sub.groupby("inspector_badge")["violation_found"].agg(["sum","count"])
-sub = sub.merge(stats.rename(columns={"sum":"tv","count":"tn"}), on="inspector_badge")
-sub["loo"] = (sub["tv"]-sub["violation_found"])/(sub["tn"]-1)
-sub = sub.drop(columns=["tv","tn"])
-sub = sub.dropna(subset=["inspection_dt"])
 
-print(f"Focal sample: {len(sub):,} complaints across {sub['bbl'].nunique():,} BBLs")
-print(f"Unique blocks: {sub['boro_block'].nunique():,}")
+def load_events(conn):
+    """Permit filings (BIS issued + DOB NOW filed) and ECB violations, as (bbl, dt)."""
+    permits = pd.read_sql_query(
+        "SELECT bbl, issued_date AS d FROM permits WHERE bbl IS NOT NULL AND issued_date IS NOT NULL "
+        "UNION ALL "
+        "SELECT bbl, filing_date AS d FROM permits_now WHERE bbl IS NOT NULL AND filing_date IS NOT NULL",
+        conn)
+    permits["dt"] = pd.to_datetime(permits["d"], errors="coerce")
+    permits = permits.dropna(subset=["dt"])[["bbl", "dt"]]
+    print(f"Total permits: {len(permits):,}")
 
-# ── Load neighbor permit data ───────────────────────────────────────────
-print("\nLoading permits...", flush=True)
-permits = pd.read_sql_query(
-    "SELECT bbl, issued_date FROM permits WHERE bbl IS NOT NULL AND issued_date IS NOT NULL", conn)
-permits["dt"] = pd.to_datetime(permits["issued_date"], errors="coerce")
-permits = permits.dropna(subset=["dt"])
+    ecb = pd.read_sql_query(
+        "SELECT boro, block, lot, issue_date FROM ecb_violations "
+        "WHERE issue_date IS NOT NULL AND boro IS NOT NULL AND block IS NOT NULL AND lot IS NOT NULL",
+        conn)
+    ecb["bbl"] = _bbl(ecb["boro"].astype(str), ecb["block"], ecb["lot"])
+    ecb["dt"] = pd.to_datetime(ecb["issue_date"], format="%Y%m%d", errors="coerce")
+    ecb = ecb[(ecb["bbl"] != "")].dropna(subset=["dt"])[["bbl", "dt"]]
+    print(f"ECB violations: {len(ecb):,}")
+    return permits, ecb
 
-pnow = pd.read_sql_query(
-    "SELECT bbl, filing_date FROM permits_now WHERE bbl IS NOT NULL AND filing_date IS NOT NULL", conn)
-pnow["dt"] = pd.to_datetime(pnow["filing_date"], errors="coerce")
-pnow = pnow.dropna(subset=["dt"])
 
-# Combine all permits
-all_permits = pd.concat([
-    permits[["bbl","dt"]],
-    pnow[["bbl","dt"]],
-], ignore_index=True)
-print(f"Total permits: {len(all_permits):,}")
+def load_blocks(conn):
+    """PLUTO block -> array of BBLs (the neighbor universe)."""
+    pl = pd.read_sql_query(
+        "SELECT borocode, block, lot FROM pluto WHERE latitude IS NOT NULL", conn)
+    pl["bbl"] = _bbl(pl["borocode"].astype(str), pl["block"], pl["lot"])
+    blk = pd.to_numeric(pl["block"], errors="coerce")
+    pl["boro_block"] = pl["borocode"].astype(str) + "_" + blk.astype("Int64").astype(str)
+    pl = pl[pl["bbl"] != ""]
+    idx = pl.groupby("boro_block")["bbl"].apply(lambda s: np.array(sorted(set(s))))
+    print(f"Blocks with properties: {len(idx):,}")
+    return idx.to_dict()
 
-# ECB violations
-ecb = pd.read_sql_query(
-    "SELECT boro,block,lot,issue_date FROM ecb_violations WHERE issue_date IS NOT NULL AND boro IS NOT NULL AND block IS NOT NULL AND lot IS NOT NULL", conn)
-ecb["bbl"] = ecb.apply(lambda r: f"{r['boro']}{int(float(r['block'])):05d}{int(float(r['lot'])):04d}"
-    if r['boro'] and r['block'] and r['lot'] else "", axis=1)
-ecb = ecb[ecb["bbl"]!=""]
-ecb["dt"] = pd.to_datetime(ecb["issue_date"], format="%Y%m%d", errors="coerce")
-ecb = ecb.dropna(subset=["dt"])
-print(f"ECB violations: {len(ecb):,}")
-conn.close()
 
-# ── Build block → BBL index ─────────────────────────────────────────────
-print("\nBuilding block-neighbor index...", flush=True)
+def _dates_by_key(events: pd.DataFrame, key: str) -> dict:
+    """key -> sorted int64 event-date array."""
+    ev = events.sort_values("dt")
+    return {k: g["dt"].values.astype("datetime64[ns]").astype(np.int64)
+            for k, g in ev.groupby(key, sort=False)}
 
-# Get all BBLs per block from PLUTO (all properties, not just complained-about ones)
-conn2 = sqlite3.connect(str(config.DB_PATH))
-pluto_blocks = pd.read_sql_query("""
-    SELECT borocode, block, lot,
-           borocode || '_' || block as boro_block
-    FROM pluto
-    WHERE latitude IS NOT NULL
-""", conn2)
-pluto_blocks["bbl"] = pluto_blocks.apply(
-    lambda r: f"{r['borocode']}{int(r['block']):05d}{int(r['lot']):04d}", axis=1)
-conn2.close()
 
-block_to_bbls = pluto_blocks.groupby("boro_block")["bbl"].apply(set).to_dict()
-print(f"Blocks with properties: {len(block_to_bbls):,}")
+def neighbor_outcomes(sub: pd.DataFrame, permits: pd.DataFrame,
+                      ecb: pd.DataFrame, block_bbls: dict) -> pd.DataFrame:
+    """Vectorized neighbor counts: per-block searchsorted over sorted date arrays."""
+    print("\nComputing neighbor outcomes (vectorized)...", flush=True)
+    bbl_to_block = {}
+    for blk, arr in block_bbls.items():
+        for b in arr:
+            bbl_to_block[b] = blk
+    for name, ev in (("permit", permits), ("ecb", ecb)):
+        ev["boro_block"] = ev["bbl"].map(bbl_to_block)
 
-# Pre-index permits and ECB by BBL
-permit_idx = all_permits.groupby("bbl")
-ecb_idx = ecb.groupby("bbl")
+    p_by_block = _dates_by_key(permits.dropna(subset=["boro_block"]), "boro_block")
+    p_by_bbl = _dates_by_key(permits, "bbl")
+    e_by_block = _dates_by_key(ecb.dropna(subset=["boro_block"]), "boro_block")
+    e_by_bbl = _dates_by_key(ecb, "bbl")
+    # per-block list of (bbl, its permit-date array), for the distinct-neighbor share
+    p_bbl_lists = {}
+    for b, dates in p_by_bbl.items():
+        blk = bbl_to_block.get(b)
+        if blk is not None:
+            p_bbl_lists.setdefault(blk, []).append((b, dates))
 
-# ── Compute neighbor outcomes ───────────────────────────────────────────
-print("\nComputing neighbor outcomes...", flush=True)
+    DAY = 86_400_000_000_000  # ns
+    EMPTY = np.array([], dtype=np.int64)
+    out = {c: [] for c in ["complaint_number", "n_neighbors"]}
+    for w in WINDOWS:
+        for c in (f"neighbor_permits_{w}d", f"neighbor_any_permit_{w}d",
+                  f"neighbor_pct_permit_{w}d", f"neighbor_ecb_{w}d"):
+            out[c] = []
 
-windows = [90, 180, 365]
-results = []
+    sub = sub.sort_values("boro_block")
+    for blk, g in sub.groupby("boro_block", sort=False):
+        universe = block_bbls.get(blk)
+        if universe is None or len(universe) == 0:
+            continue
+        uni_set = set(universe)
+        lo = g["inspection_dt"].values.astype("datetime64[ns]").astype(np.int64)
+        focal_bbls = g["bbl"].values
+        in_uni = np.fromiter((b in uni_set for b in focal_bbls), bool, len(focal_bbls))
+        n_nb = len(universe) - in_uni.astype(int)
+        keep = n_nb > 0
+        if not keep.any():
+            continue
+        bp = p_by_block.get(blk, EMPTY)
+        be = e_by_block.get(blk, EMPTY)
+        own_p = [p_by_bbl.get(b, EMPTY) for b in focal_bbls]
+        own_e = [e_by_bbl.get(b, EMPTY) for b in focal_bbls]
+        out["complaint_number"].extend(g["complaint_number"].values[keep])
+        out["n_neighbors"].extend(n_nb[keep])
+        for w in WINDOWS:
+            hi = lo + w * DAY
+            blk_p = np.searchsorted(bp, hi, "right") - np.searchsorted(bp, lo, "right")
+            blk_e = np.searchsorted(be, hi, "right") - np.searchsorted(be, lo, "right")
+            own_pc = np.array([np.searchsorted(d, h, "right") - np.searchsorted(d, l, "right")
+                               for d, l, h in zip(own_p, lo, hi)])
+            own_ec = np.array([np.searchsorted(d, h, "right") - np.searchsorted(d, l, "right")
+                               for d, l, h in zip(own_e, lo, hi)])
+            nb_p = blk_p - own_pc
+            nb_e = blk_e - own_ec
+            # distinct neighbor lots with >=1 permit: loop over the block's
+            # permit-holding lots (few), vectorized over this block's focals
+            with_permit = np.zeros(len(g), dtype=np.int64)
+            for b, dates in p_bbl_lists.get(blk, ()):
+                cnt = np.searchsorted(dates, hi, "right") - np.searchsorted(dates, lo, "right")
+                with_permit += ((cnt > 0) & (focal_bbls != b)).astype(np.int64)
+            out[f"neighbor_permits_{w}d"].extend(nb_p[keep])
+            out[f"neighbor_any_permit_{w}d"].extend((with_permit[keep] > 0).astype(int))
+            out[f"neighbor_pct_permit_{w}d"].extend(with_permit[keep] / n_nb[keep])
+            out[f"neighbor_ecb_{w}d"].extend(nb_e[keep])
 
-for i, (_, row) in enumerate(sub.iterrows()):
-    focal_bbl = row["bbl"]
-    focal_block = row["boro_block"]
-    idt = row["inspection_dt"]
+    spill = pd.DataFrame(out)
+    merged = sub.merge(spill, on="complaint_number", how="inner")
+    print(f"Spillover sample: {len(merged):,} complaints with neighbors "
+          f"(mean neighbors {merged['n_neighbors'].mean():.1f})")
+    return merged
 
-    # Get all BBLs on the same block, excluding the focal property
-    neighbor_bbls = block_to_bbls.get(focal_block, set()) - {focal_bbl}
-    if not neighbor_bbls:
-        continue
 
-    rec = {
-        "complaint_number": row["complaint_number"],
-        "n_neighbors": len(neighbor_bbls),
-    }
+def estimate(sub_spill: pd.DataFrame):
+    """Within-cell estimates with inspector-clustered SEs (pyfixest)."""
+    import pyfixest as pf
+    sub_spill = sub_spill.copy()
+    sub_spill["cell"] = (sub_spill["category_description"].fillna("U").astype(str) + "|"
+                         + sub_spill["assigned_to"].fillna("U").astype(str) + "|"
+                         + sub_spill["year_month"].fillna("U").astype(str) + "|"
+                         + sub_spill["nta"].astype(str))
+    print(f"\n{'='*95}")
+    print("SPATIAL SPILLOVERS - same-block neighbors, cat x unit x ym x NTA cells, "
+          "SEs clustered by inspector")
+    print(f"{'='*95}")
+    print(f"{'Outcome':<36} {'beta':>9} {'clust SE':>9} {'t':>7} {'N':>9} {'mean':>8}")
+    print("-" * 85)
+    for w in WINDOWS:
+        for col in (f"neighbor_pct_permit_{w}d", f"neighbor_permits_{w}d", f"neighbor_ecb_{w}d"):
+            d = sub_spill[[col, "loo", "cell", "inspector_badge"]].dropna()
+            d.columns = ["y", "x", "fe", "insp"]
+            m = pf.feols("y ~ x | fe", data=d, vcov={"CRV1": "insp"})
+            b, se = float(m.coef()["x"]), float(m.se()["x"])
+            print(f"  {col:<34} {b:>9.4f} {se:>9.4f} {b/se:>7.2f} {m._N:>9,} "
+                  f"{d['y'].mean():>8.3f}")
 
-    for w in windows:
-        cutoff = idt + pd.Timedelta(days=w)
 
-        # Count neighbor permits
-        n_permits = 0
-        n_neighbors_with_permit = 0
-        for nbbl in neighbor_bbls:
-            if nbbl in permit_idx.groups:
-                np_ = permit_idx.get_group(nbbl)
-                within = np_[(np_["dt"] > idt) & (np_["dt"] <= cutoff)]
-                if len(within) > 0:
-                    n_permits += len(within)
-                    n_neighbors_with_permit += 1
+def main():
+    conn = sqlite3.connect(str(config.DB_PATH), timeout=30)
+    sub = load_focal(conn)
+    permits, ecb = load_events(conn)
+    block_bbls = load_blocks(conn)
+    conn.close()
+    sub_spill = neighbor_outcomes(sub, permits, ecb, block_bbls)
+    sub_spill.to_pickle(CACHE)
+    print(f"cached spillover frame -> {CACHE}")
+    estimate(sub_spill)
 
-        rec[f"neighbor_permits_{w}d"] = n_permits
-        rec[f"neighbor_any_permit_{w}d"] = int(n_neighbors_with_permit > 0)
-        rec[f"neighbor_pct_permit_{w}d"] = n_neighbors_with_permit / len(neighbor_bbls) if neighbor_bbls else 0
 
-        # Count neighbor ECB violations
-        n_ecb = 0
-        for nbbl in neighbor_bbls:
-            if nbbl in ecb_idx.groups:
-                ev = ecb_idx.get_group(nbbl)
-                within = ev[(ev["dt"] > idt) & (ev["dt"] <= cutoff)]
-                n_ecb += len(within)
-
-        rec[f"neighbor_ecb_{w}d"] = n_ecb
-
-    results.append(rec)
-
-    if (i+1) % 25000 == 0:
-        print(f"  {i+1:,}/{len(sub):,} ({100*(i+1)/len(sub):.0f}%)", flush=True)
-
-spill = pd.DataFrame(results)
-sub_spill = sub.merge(spill, on="complaint_number", how="inner")
-print(f"\nSpillover sample: {len(sub_spill):,} complaints with neighbors")
-
-# ── Regressions ─────────────────────────────────────────────────────────
-def demean(a,g):
-    s=pd.Series(a,dtype=float); return (s-s.groupby(pd.Series(g)).transform("mean")).values
-
-def run(y,x,g):
-    v=~np.isnan(y)&~np.isnan(x); yd=demean(y[v],g[v]); xd=demean(x[v],g[v])
-    X=np.column_stack([np.ones(len(yd)),xd]); b,_,_,_=np.linalg.lstsq(X,yd,rcond=None)
-    r=yd-X@b; se=np.sqrt(np.sum(r**2)/(len(yd)-2)*np.linalg.inv(X.T@X)[1,1])
-    return b[1],se,b[1]/se if se>0 else 0,v.sum()
-
-nta_groups = (sub_spill["category_description"].fillna("U").astype(str)+"|"+
-              sub_spill["assigned_to"].fillna("U").astype(str)+"|"+
-              sub_spill["year_month"].fillna("U").astype(str)+"|"+
-              sub_spill["nta"].astype(str)).values
-x = sub_spill["loo"].values
-
-print(f"\n{'='*90}")
-print(f"SPATIAL SPILLOVER ANALYSIS — Same-Block Neighbors")
-print(f"N = {len(sub_spill):,}  |  Cat × Unit × YM × NTA FEs")
-print(f"Mean neighbors per focal property: {sub_spill['n_neighbors'].mean():.1f}")
-print(f"{'='*90}")
-
-print(f"\nPANEL A: NEIGHBOR PERMIT FILING")
-print(f"{'Outcome':<45} {'β':>8} {'SE':>8} {'t':>8} {'N':>8} {'Mean':>8}")
-print("-"*85)
-for w in windows:
-    y = sub_spill[f"neighbor_any_permit_{w}d"].values.astype(float)
-    b,se,t,n = run(y,x,nta_groups)
-    print(f"  Any neighbor permit ({w}d){'':<19} {b:>8.4f} {se:>8.4f} {t:>8.2f} {n:>8,} {np.nanmean(y):>8.3f}")
-
-print()
-for w in windows:
-    y = sub_spill[f"neighbor_pct_permit_{w}d"].values.astype(float)
-    b,se,t,n = run(y,x,nta_groups)
-    print(f"  Pct neighbors w/ permit ({w}d){'':<14} {b:>8.4f} {se:>8.4f} {t:>8.2f} {n:>8,} {np.nanmean(y):>8.3f}")
-
-print()
-for w in windows:
-    y = sub_spill[f"neighbor_permits_{w}d"].values.astype(float)
-    b,se,t,n = run(y,x,nta_groups)
-    print(f"  Total neighbor permits ({w}d){'':<16} {b:>8.4f} {se:>8.4f} {t:>8.2f} {n:>8,} {np.nanmean(y):>8.3f}")
-
-print(f"\nPANEL B: NEIGHBOR ECB VIOLATIONS")
-print("-"*85)
-for w in windows:
-    y = sub_spill[f"neighbor_ecb_{w}d"].values.astype(float)
-    b,se,t,n = run(y,x,nta_groups)
-    print(f"  Neighbor ECB violations ({w}d){'':<15} {b:>8.4f} {se:>8.4f} {t:>8.2f} {n:>8,} {np.nanmean(y):>8.3f}")
-
-# Panel C: Heterogeneity by own outcome
-print(f"\nPANEL C: SPILLOVERS CONDITIONAL ON OWN VIOLATION STATUS")
-print("-"*85)
-for outcome_val, outcome_label in [(1, "Violation found"), (0, "No violation")]:
-    osub = sub_spill[sub_spill["violation_found"]==outcome_val]
-    og = (osub["category_description"].fillna("U")+"|"+osub["assigned_to"].fillna("U")+"|"+
-          osub["year_month"].fillna("U")+"|"+osub["nta"]).values
-    ox = osub["loo"].values
-    y = osub["neighbor_any_permit_90d"].values.astype(float)
-    b,se,t,n = run(y,ox,og)
-    print(f"  {outcome_label}: neighbor permit (90d){'':<13} {b:>8.4f} {se:>8.4f} {t:>8.2f} {n:>8,}")
-
-print(f"\n{'='*90}")
-print("DONE")
-print(f"{'='*90}")
+if __name__ == "__main__":
+    main()

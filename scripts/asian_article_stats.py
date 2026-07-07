@@ -32,10 +32,10 @@ from disposition_codes import classify_disposition
 from build_risk_dataset import CATEGORY_GROUPS
 
 PANEL = config.DATA_DIR / "analysis" / "property_risk_panel_v2.csv.gz"
-B_COMPLAINTS = 0.3222   # bisg_ppml_ncomp p_asian (owner_tidy_estimates.csv)
-GAP_SUBST = 2.4         # insp_viol_pooled p_asian, pp (asian_heterogeneity.csv)
-GAP_NOACC = 2.4         # insp_noacc_pooled p_asian, pp
-YEARS = 6.36            # Jan 2020 - mid-May 2026
+B_COMPLAINTS = 0.3185   # bisg_ppml_ncomp p_asian (owner_tidy_estimates.csv)
+GAP_SUBST = 2.42        # insp_viol_pooled p_asian, pp (asian_heterogeneity.csv)
+GAP_NOACC = 2.43        # insp_noacc_pooled p_asian, pp
+YEARS = 6.41            # Jan 2020 - end-May 2026 (window cap 2026-05-31)
 
 
 def load_subsample():
@@ -129,8 +129,11 @@ def interacted_fe(bs_full):
     df["multi_prop_owner"] = df["multi_prop_owner"].astype(int)
     df["owner_occ_star"] = df["owner_occ_star"].astype(int)
     df["cell"] = df["bct2020"] + "_" + df["size_bin"]
+    _ba = pd.to_numeric(df["bldgarea"], errors="coerce")
+    df["log_bldgarea"] = np.log(_ba.where(_ba > 0))
+    df["com_class"] = df["bldgclass"].astype(str).str[0].isin(["S", "K", "O"]).astype(int)
     X = ("p_black + p_hispanic + p_asian + owner_occ_star + era_pre1940 + era_4079"
-         " + era_8099 + era_unknown + mixed_use + mzone + multi_bldg"
+         " + era_8099 + era_unknown + com_class + log_bldgarea + mzone + multi_bldg"
          " + log2_area_per_unit + value_rank + any_prior_viol"
          " + geo_nyc_other + geo_outside_nyc + geo_unknown + multi_prop_owner")
     m = pf.fepois(f"n_complaints ~ {X} | cell", data=df, vcov={"CRV1": "bct2020"})
@@ -154,8 +157,11 @@ def nonwhite_contrasts(bs_full):
         df[f"geo_{g}"] = (df["owner_geo"] == g).astype(int)
     df["multi_prop_owner"] = df["multi_prop_owner"].astype(int)
     df["owner_occ_star"] = df["owner_occ_star"].astype(int)
+    _ba = pd.to_numeric(df["bldgarea"], errors="coerce")
+    df["log_bldgarea"] = np.log(_ba.where(_ba > 0))
+    df["com_class"] = df["bldgclass"].astype(str).str[0].isin(["S", "K", "O"]).astype(int)
     X = ("p_black + p_hispanic + p_asian + owner_occ_star + era_pre1940 + era_4079"
-         " + era_8099 + era_unknown + mixed_use + mzone + multi_bldg"
+         " + era_8099 + era_unknown + com_class + log_bldgarea + mzone + multi_bldg"
          " + log2_area_per_unit + value_rank + any_prior_viol"
          " + geo_nyc_other + geo_outside_nyc + geo_unknown + multi_prop_owner")
 
@@ -198,9 +204,9 @@ def nonwhite_contrasts(bs_full):
     c["noacc100"] = (c["outcome"] == "no_access").astype(float) * 100
     keep = (["bbl_key", "size_bin", "bct2020", "p_black", "p_hispanic", "p_asian",
              "owner_occ_star", "era_pre1940", "era_4079", "era_8099", "era_unknown",
-             "mixed_use", "mzone", "multi_bldg", "log2_area_per_unit", "value_rank",
-             "any_prior_viol", "geo_nyc_other", "geo_outside_nyc", "geo_unknown",
-             "multi_prop_owner"])
+             "com_class", "log_bldgarea", "mzone", "multi_bldg", "log2_area_per_unit",
+             "value_rank", "any_prior_viol", "geo_nyc_other", "geo_outside_nyc",
+             "geo_unknown", "multi_prop_owner"])
     insp = c.merge(df[keep], on="bbl_key")
     sub = insp[insp["outcome"].isin(["violation", "no_violation"])]
     print("violations per substantive inspection (LPM, pp)")
@@ -224,19 +230,19 @@ def reduced_form_and_marginal(bs):
         print(f"  {g}: complaints/100 {d['n_complaints'].sum()/n*100:.1f} | "
               f"viol/100 {d['n_viol_disp'].sum()/n*100:.1f} | "
               f"ECB/100 {d['n_ecb_2020on'].sum()/n*100:.1f}")
-    w_sub, w_v = 65.1, 29.3   # white: substantive/100 complaints, viol%/substantive
+    w_sub, w_v = 65.0, 29.4   # white: substantive/100 complaints, viol%/substantive
     base = w_sub * w_v / 100
     a = (w_sub - GAP_NOACC) * (w_v - GAP_SUBST) / 100
-    total = 1.38 * a
-    marginal = (total - base) / 0.38
+    total = 1.374 * a
+    marginal = (total - base) / 0.374
     print(f"  violations per 100 complaints: white {base:.1f}, asian adjusted {a:.1f}")
-    print(f"  product-implied total at 1.38x volume: {total:.1f} (+{(total/base-1)*100:.0f}%)")
+    print(f"  product-implied total at 1.37x volume: {total:.1f} (+{(total/base-1)*100:.0f}%)")
     print(f"  product-implied marginal substantiation: {marginal:.1f} per 100")
-    B_VIOL = 0.1109  # bisg_ppml_viol p_asian (citation_tidy_estimates.csv)
+    B_VIOL = 0.1102  # bisg_ppml_viol p_asian (citation_tidy_estimates.csv)
     g = np.exp(B_VIOL) - 1
     print(f"  direct count model: +{g*100:.0f}% disposition violations -> "
-          f"level {6.3*(1+g):.1f} vs 6.3 per 100; "
-          f"marginal substantiation {base*g/0.38:.1f} per 100 (quoted in text)")
+          f"level {6.36*(1+g):.1f} vs 6.4 per 100; "
+          f"marginal substantiation {base*g/0.374:.1f} per 100 (quoted in text)")
 
 
 if __name__ == "__main__":

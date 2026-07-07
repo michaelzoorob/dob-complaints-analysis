@@ -36,6 +36,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 ACS_CACHE = OUTPUT_DIR / "acs_tract_2023.csv"
 
 WINDOW_START = "2020-01-01"   # complaint outcome window
+WINDOW_END = "2026-05-31"     # analysis cap: through end of May 2026
 HISTORY_START, HISTORY_END = 2010, 2019  # pre-period violation history
 
 
@@ -90,7 +91,7 @@ def load_complaints(conn) -> pd.DataFrame:
     """, conn)
     df["entered"] = pd.to_datetime(df["date_entered"], format="%m/%d/%Y", errors="coerce")
     n0 = len(df)
-    df = df[df["entered"] >= WINDOW_START]
+    df = df[(df["entered"] >= WINDOW_START) & (df["entered"] <= WINDOW_END)]
     print(f"Complaints: {n0:,} scraped w/ block-lot -> {len(df):,} in window "
           f"({df['entered'].min():%Y-%m-%d} to {df['entered'].max():%Y-%m-%d})")
 
@@ -264,7 +265,8 @@ def classify_owner(name) -> str:
 # ── 7. Assemble ──────────────────────────────────────────────────────────
 
 def main():
-    conn = sqlite3.connect(str(config.DB_PATH))
+    conn = sqlite3.connect(str(config.DB_PATH), timeout=60)  # busy timeout: live scrape may hold write lock
+    conn.execute("PRAGMA busy_timeout=60000;")
     pluto = load_pluto(conn)
     comp = load_complaints(conn)
     star = load_star(conn)

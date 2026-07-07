@@ -54,3 +54,12 @@ python3 run_pipeline.py status                # Show progress + field fill rates
 
 - After making changes, always restart the dev server to pick up the latest code.
 - Before marking a task as complete, verify outputs (e.g. run the app, check logs, inspect results) to confirm they behave as expected.
+
+## Analysis Conventions (learned the hard way; do not regress)
+
+- **Cluster standard errors at the level the treatment varies.** Inspector-level treatments (LOO strictness) cluster by inspector; unclustered errors overstated those t-stats roughly tenfold (t=333 became t=41). Property-level owner traits cluster by census tract, which is coarser and conservative.
+- **Violation counts use only the deduplicated BIS + DOB NOW union** (`scripts/dob_ledger.py`). The BIS-only row in `citation_tidy_estimates.csv` is retained for continuity, never as a headline; the owner-occupancy gap sits entirely in the BIS-attributed stream (see `scripts/owner_robustness_checks.py`).
+- **Commercial-exposure controls** on full-universe models: `com_class` (PLUTO class S/K/O) + `log_bldgarea` + `comm_bin` fixed effects. On the BISG individually-owned <16-unit subsample, drop `comm_bin` (degenerate) and keep `com_class` + `log_bldgarea`.
+- **BISG race gaps bundle ownership tenure.** Asian-classified owners bought far more recently; deed-recency controls move the headline complaint gap from about +37% to +28% (`scripts/owner_robustness_checks.py`). Quote the caveat; the ownership-transition design is the recency-matched complement.
+- **No `iterrows` or row-wise `.apply` on large tables.** Vectorize (per-group `searchsorted` over sorted event arrays turned a 30-minute loop into 80 seconds; see `scripts/spatial_spillovers.py`).
+- **Blog prose:** every quoted number must trace to a CSV in `data/analysis/risk_models/`; never reference earlier or partial versions of an analysis; adversarial replication checks live in `scripts/audit/`.

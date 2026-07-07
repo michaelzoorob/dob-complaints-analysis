@@ -176,7 +176,8 @@ def main():
     df = pd.read_csv(PANEL, dtype={"bct2020": str, "size_bin": str, "borocode": str,
                                    "block": str, "lot": str})
     df["bbl_key"] = df["bbl_key"].astype(str)
-    conn = sqlite3.connect(str(config.DB_PATH))
+    conn = sqlite3.connect(str(config.DB_PATH), timeout=60)  # busy timeout: live scrape may hold write lock
+    conn.execute("PRAGMA busy_timeout=60000;")
     df = absentee_categories(df, conn)
     df = portfolio_flag(df, conn)
     df = bisg(df, conn)

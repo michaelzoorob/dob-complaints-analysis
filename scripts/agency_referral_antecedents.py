@@ -51,7 +51,7 @@ API = "https://data.cityofnewyork.us/resource/erm2-nwe9.json"
 
 BUILDING_COVARS = [
     "owner_occ_star", "era_pre1940", "era_4079", "era_8099", "era_unknown",
-    "mixed_use", "mzone", "multi_bldg", "log2_area_per_unit", "value_rank",
+    "com_class", "log_bldgarea", "mzone", "multi_bldg", "log2_area_per_unit", "value_rank",
     "any_prior_viol", "geo_nyc_other", "geo_outside_nyc", "geo_unknown",
     "multi_prop_owner",
 ]
@@ -82,6 +82,13 @@ def load_panel_and_events():
     df["era_unknown"] = (~yb.between(1800, 2026)).astype(int)
     df["multi_bldg"] = (df["numbldgs"] >= 2).astype(int)
     df["log2_area_per_unit"] = np.log2(df["area_per_unit"])
+    # commercial-exposure controls (spec 2b+ from owner_commercial_sensitivity.py):
+    # com_class (S/K/O storefront/office/mixed class) + log total floor area, replacing
+    # the binary mixed_use flag. comm_bin FE omitted -- near-degenerate on this
+    # individually-owned <16-unit subsample (~2% commercial exposure).
+    _ba = pd.to_numeric(df["bldgarea"], errors="coerce")
+    df["log_bldgarea"] = np.log(_ba.where(_ba > 0))
+    df["com_class"] = df["bldgclass"].astype(str).str[0].isin(["S", "K", "O"]).astype(int)
     for g in ["nyc_other", "outside_nyc", "unknown"]:
         df[f"geo_{g}"] = (df["owner_geo"] == g).astype(int)
     df["multi_prop_owner"] = df["multi_prop_owner"].astype(int)
