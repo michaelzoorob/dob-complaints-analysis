@@ -1,0 +1,38 @@
+metric,value,expected_wave1,check,note
+events_rows,782755.0,,,scraped complaints 2020-01..2026-05
+events_agency_rows,249707.0,249707.0,OK,empty ref_311
+agency_share_overall,0.319,,,
+events_tract_match_share,0.9672,,,
+events_rows__statutory_periodic,68665.0,,,
+agency_share__statutory_periodic,0.9994,,,
+active_permit_share__statutory_periodic,0.7235,,,
+events_rows__discretionary_field,107899.0,,,
+agency_share__discretionary_field,0.9235,,,
+active_permit_share__discretionary_field,0.5862,,,
+events_rows__followup,17361.0,,,
+agency_share__followup,0.9999,,,
+active_permit_share__followup,0.2159,,,
+events_rows__mixed_incident,66017.0,,,
+agency_share__mixed_incident,0.1913,,,
+active_permit_share__mixed_incident,0.5002,,,
+events_rows__other,522813.0,,,
+agency_share__other,0.0984,,,
+active_permit_share__other,0.2402,,,
+active_permit_share_agency,0.5428,0.543,OK,Wave-1: 54.3% proactive
+active_permit_share_caller,0.2622,0.262,OK,Wave-1: 26.2% caller
+active_permit_share_prefix_8A,0.8356,0.836,OK,spot check
+active_permit_share_prefix_7G,0.6957,0.696,OK,spot check
+ecb_ref_rows,167197.0,,,
+ecb_match_share,0.9467,0.95,OK,Wave-1: ~95% of refs
+jobs_rows,511174.0,,,permits_now first permit 2020+
+jobs_permit_span_share,0.9936,,,
+jobs_signoff_fill_share,0.6369,0.64,OK,Wave-1: 64% filled
+jobs_conversion_relaxed,1337.0,,,"Alt-CO family, 0 existing units, >0 proposed"
+jobs_conversion_strict_ge10,630.0,630.0,OK,Wave-1: 630 (proposed>=10)
+jobs_conversion_office_class,412.0,,,relaxed + PLUTO bldgclass O/K
+panel_rows,178794.0,,,
+panel_tracts,2322.0,,,
+panel_months,77.0,,,
+panel_caller_total,522038.0,,,
+panel_proactive_total,235068.0,,,
+panel_active_job_months,5981779.0,,,

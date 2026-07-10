@@ -21,6 +21,9 @@ __pycache__/
 /tmp/
 *.tmp
 
+# Proactive-spine cache (rebuild with scripts/proactive_spine.py)
+data/analysis/proactive/
+
 # Session/scratch artifacts (not part of replication package)
 .playwright-mcp/
 data/analysis/blog_posts/substack_segments/

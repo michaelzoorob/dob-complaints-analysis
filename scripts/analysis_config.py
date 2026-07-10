@@ -69,3 +69,50 @@ NEIGHBOR_DEFINITIONS = {
 
 MIN_INSPECTOR_CASES = 30  # Minimum cases per inspector
 MIN_CELL_SIZE = 5         # Minimum observations per FE cell
+
+
+# ── Proactive-enforcement category families ─────────────────────────────
+
+# 2-char complaint-category prefixes (substr(category_code, 1, 2)) grouped
+# by the kind of agency-initiated activity they represent. Fixed here once
+# per the Wave-1 proactive-enforcement inventory (2026-07); see
+# data/analysis/blog_posts/proactive_enforcement_plan.md.
+
+_PROACTIVE_FAMILY_PREFIXES = {
+    # Cyclical / legally mandated compliance tracking (LL188, facade/FISP,
+    # tenant-protection, demo tracking, structural-monitoring roster,
+    # shelters, sign registration, retaining walls)
+    "statutory_periodic": (
+        "7K", "7F", "6V", "2E", "2F", "2L", "2P", "6B", "6C", "6D",
+        "4S", "6Z", "6Y", "7Q", "8P",
+    ),
+    # Sweeps, compliance checks, and unit-initiated field work where DOB
+    # chooses the target (8A compliance, 7G sweeps, EWO, worker
+    # endangerment, padlock/quality-of-life)
+    "discretionary_field": (
+        "8A", "7G", "1X", "1Y", "1V", "1U", "2Y", "5G", "6X", "91",
+        "4J", "4B", "5H",
+    ),
+    # Re-inspections keyed to earlier enforcement actions
+    "followup": ("7R", "4G", "1L", "2H"),
+    # Incident-type categories carrying both caller and agency streams
+    # (unstable buildings, falling debris, unsafe demo, excavation,
+    # scaffold accidents, adjacent-construction damage)
+    "mixed_incident": ("30", "10", "12", "14", "03", "1E", "23", "67"),
+}
+
+# Flat map: 2-char prefix -> family name
+PROACTIVE_FAMILIES = {
+    prefix: family
+    for family, prefixes in _PROACTIVE_FAMILY_PREFIXES.items()
+    for prefix in prefixes
+}
+
+# BIS parser artifact: category_description reads "Date" for a slice of
+# rows in several categories; 73 and 7R have no clean description anywhere
+# in the scrape (7R is 100% "Date"), so hand-map them from the DOB
+# complaint-category code table.
+CATEGORY_DESC_OVERRIDES = {
+    "73": "FAILURE TO MAINTAIN",
+    "7R": "KEY CLASS 1 HAZARDOUS VIOLATION FOLLOW-UP",
+}
