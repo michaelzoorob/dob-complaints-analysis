@@ -406,14 +406,17 @@ def make_figure(res_a: pd.DataFrame, swept_p: float, top_p: float, gap):
     ax.set_ylabel("violations per 100 inspections", fontsize=11)
     ymax = max(raw["975pct"].max(), np.nanmax(fe_hi)) * 1.45
     ax.set_ylim(0, ymax)
-    ax.legend(loc="upper right", frameon=False, fontsize=10.5)
+    # opaque surface-colored patch so the top gridline does not run through
+    # the legend handles/text
+    ax.legend(loc="upper right", frameon=True, framealpha=1.0,
+              facecolor=SURFACE, edgecolor="none", fontsize=10.5)
     ax.set_title("Where DOB inspects most, does it find more?",
-                 loc="left", fontsize=15, fontweight="bold", color=INK, pad=14)
+                 loc="left", fontsize=15, fontweight="bold", color=INK, pad=26)
     ax.text(0, 1.015, "hit rate of agency-initiated discretionary inspections "
             "by how intensively DOB works the tract · 95% CIs, "
             "SEs clustered by tract",
             transform=ax.transAxes, fontsize=10.5, color=MUTED)
-    ax.text(0.02, 0.955,
+    ax.text(0.02, 0.985,
             f"within-category slope {slope['estimate']:+.2f} pp per decile "
             f"(95% CI {slope['25pct']:+.2f} to {slope['975pct']:+.2f})",
             transform=ax.transAxes, fontsize=10.5, color=INK2, va="top")

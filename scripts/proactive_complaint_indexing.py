@@ -259,7 +259,8 @@ def make_figure(df, est: pd.DataFrame) -> None:
                 f"PPML elasticity {r.estimate:.3f}\n"
                 f"95% CI [{r['25pct']:.3f}, {r['975pct']:.3f}]",
                 transform=ax.transAxes, fontsize=11.5, color=INK,
-                va="top", linespacing=1.5)
+                va="top", linespacing=1.5,
+                bbox=dict(facecolor=SURFACE, edgecolor="none", pad=2))
         ax.set_title(ptitle, loc="left", fontsize=12.5, fontweight="bold",
                      color=INK, pad=20)
         ax.text(0, 1.03, psub, transform=ax.transAxes, fontsize=10,

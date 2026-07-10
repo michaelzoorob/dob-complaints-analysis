@@ -334,14 +334,18 @@ def make_figure(est, meta):
     ax.tick_params(labelsize=9)
     draw(foc, BLUE, -0.12, "the lot itself")
     draw(spl, AQUA, +0.12, "other lots on the same block")
-    ax.legend(loc="upper left", frameon=False, fontsize=9.5)
+    # opaque surface-colored patch so the 0.150 gridline does not strike
+    # through the legend text
+    ax.legend(loc="upper left", frameon=True, framealpha=1.0,
+              facecolor=SURFACE, edgecolor="none", fontsize=9.5)
     ax.set_xlabel("months relative to the complaint (reference = month before)",
                   fontsize=9.5)
     ax.set_ylabel("difference in agency-initiated complaints\nper lot-month",
                   fontsize=9)
     ymax = ax.get_ylim()[1]
     ax.text(-0.85, ymax * 0.97, "unstable-building\ncomplaint filed",
-            fontsize=8.5, color=MUTED, ha="right", va="top", style="italic")
+            fontsize=8.5, color=MUTED, ha="right", va="top", style="italic",
+            bbox=dict(facecolor=SURFACE, edgecolor="none", pad=1.5))
 
     fig.suptitle("After an unstable-building complaint, agency enforcement\n"
                  "spikes at the lot for three months and stays flat on the block",

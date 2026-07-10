@@ -332,17 +332,18 @@ def make_figure(series: pd.DataFrame) -> str:
         ax2.spines[s].set_visible(False)
 
     # inline labels
-    ax.text(pd.Timestamp("2024-06-01"), 570, "Active construction jobs",
+    ax.text(pd.Timestamp("2024-06-01"), 622, "Active construction jobs",
             fontsize=11.5, color=BLUE, fontweight="bold")
     ax.text(pd.Timestamp("2021-11-01"), 237,
             "Discretionary field monitoring\n(sweeps, compliance, work orders)",
             fontsize=11.5, color=RED, fontweight="bold")
+    # label the right-axis series at its start so the connector stays short
+    # and never crosses the red annotation or either data series
+    y_start = c.loc[mature, "monitoring_per_100_jobs"].iloc[0] / 2.1 * 660
     ax.annotate("per 100 active jobs (right axis)",
-                xy=(pd.Timestamp("2023-08-01"),
-                    c.loc[c["month"] == "2023-08",
-                          "monitoring_per_100_jobs"].iat[0] / 2.1 * 660),
-                xytext=(pd.Timestamp("2022-01-15"), 105),
-                fontsize=10.5, color=AQUA,
+                xy=(pd.Timestamp(MATURE_START + "-01"), y_start + 4),
+                xytext=(pd.Timestamp("2022-12-01"), y_start + 16),
+                fontsize=10.5, color=AQUA, ha="right", va="center",
                 arrowprops=dict(arrowstyle="-", color=AQUA, linewidth=0.9))
     r23 = c.loc[c["month"].str[:4] == "2023", "monitoring_per_100_jobs"].mean()
     r26 = c.loc[c["month"].str[:4] == "2026", "monitoring_per_100_jobs"].mean()
@@ -355,7 +356,7 @@ def make_figure(series: pd.DataFrame) -> str:
 
     ax.set_title("Construction boomed. Proactive monitoring did not.",
                  loc="left", fontsize=15, fontweight="bold", color=INK,
-                 pad=14)
+                 pad=26)
     ax.text(0, 1.015, "citywide monthly series, January 2020 – May 2026 "
             "· active DOB NOW jobs vs agency-initiated field monitoring",
             transform=ax.transAxes, fontsize=10.5, color=MUTED)

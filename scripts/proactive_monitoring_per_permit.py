@@ -313,13 +313,19 @@ def make_figure(mf: pd.DataFrame) -> pd.DataFrame:
     (marks,) = ax.plot(
         g.loc[show, "decile"], g.loc[show, "conv_rate_per_100"],
         linestyle="none", marker="D", markersize=9, color=RED,
-        markeredgecolor="white", markeredgewidth=1.2, zorder=4,
+        markeredgecolor="white", markeredgewidth=1.2, zorder=4, clip_on=False,
         label="office-to-resi conversions (relaxed definition)")
     halo = [pe.withStroke(linewidth=2.5, foreground=SURFACE)]
+    y_top = ax.get_ylim()[1]
     for _, r in g.loc[show].iterrows():
+        # labels sit above the diamond, except near the top of the axes,
+        # where they would collide with the last gridline; flip those below
+        below = r["conv_rate_per_100"] > 0.9 * y_top
         ax.annotate(f"n={int(r['conv_n_jobs'])}",
                     (r["decile"], r["conv_rate_per_100"]),
-                    textcoords="offset points", xytext=(0, 9),
+                    textcoords="offset points",
+                    xytext=(0, -11) if below else (0, 9),
+                    va="top" if below else "baseline",
                     ha="center", fontsize=8.5, color=RED,
                     path_effects=halo, zorder=5)
 
