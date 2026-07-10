@@ -147,7 +147,8 @@ def causal_panels():
     ax2.set_ylabel("pp per 10pp-stricter inspector", fontsize=9)
     ax2.set_title("B. Effects by window, inside category x unit x month x NTA cells", loc="left",
                   fontsize=10, color=INK2, pad=8)
-    ax2.legend(frameon=False, fontsize=8.8, loc="upper left")
+    # upper center: the tall 30d whisker runs through an upper-left legend
+    ax2.legend(frameon=False, fontsize=8.8, loc="upper center")
     ax2.tick_params(labelsize=8.5)
     ax2.spines[["top", "right"]].set_visible(False)
 

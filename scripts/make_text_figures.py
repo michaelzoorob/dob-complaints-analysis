@@ -43,8 +43,12 @@ def dot(ax, x, y, lo, hi, p):
             markerfacecolor=col if sig else SURFACE,
             markeredgecolor=SURFACE if sig else col, markeredgewidth=1.8)
     lab = f"{x:+.1f}" + ("" if sig else " (n.s.)")
+    # surface-colored box so the zero line cannot cross a leading minus sign
+    # (a vertical line through "-1.6" reads as "+1.6")
     ax.annotate(lab, (hi, y), textcoords="offset points", xytext=(6, 0),
-                va="center", ha="left", fontsize=9, color=INK2)
+                va="center", ha="left", fontsize=9, color=INK2,
+                bbox=dict(facecolor=SURFACE, edgecolor="none",
+                          boxstyle="square,pad=0.12"))
 
 
 def fig_features():
