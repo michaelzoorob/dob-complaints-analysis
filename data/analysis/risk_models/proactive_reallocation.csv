@@ -1,0 +1,36 @@
+block,term,value,note,actual_rate_pct,n,window
+headline,n_7g_events,25782.0,agency 7G sweep events in spine,,,2020-01..2026-05
+headline,n_7g_bbls,15494.0,unique swept BBLs (incl. non-residential),,,2020-01..2026-05
+headline,n_swept_panel_lots,11099.0,swept lots matched to residential risk panel,,,2020-01..2026-05
+headline,swept_panel_match_share,0.7163418097327998,,,,2020-01..2026-05
+headline,mean_pred_swept_pct,52.88418508401251,"mean predicted any-violation-2020on risk, swept lots",,,2020-01..2026-05
+headline,mean_pred_top_unswept_pct,98.80147189550797,equal-count highest-scoring never-swept lots,,,2020-01..2026-05
+headline,gap_pp,45.91728681149549,"top-unswept minus swept, tract-clustered",,,2020-01..2026-05
+headline,gap_pp_se,0.8318481008420529,,,,2020-01..2026-05
+headline,gap_pp_ci_lo,44.285945215062746,,,,2020-01..2026-05
+headline,gap_pp_ci_hi,47.54862840792823,,,,2020-01..2026-05
+headline,extra_viol_per_1000,459.1728681149549,"gap x 10 = extra violations per 1,000 inspections",,,2020-01..2026-05
+headline,extra_viol_per_1000_ci_lo,442.8594521506275,,,,2020-01..2026-05
+headline,extra_viol_per_1000_ci_hi,475.48628407928226,,,,2020-01..2026-05
+headline,actual_rate_swept_pct,81.09739616181638,realized 2020+ rate; partly caused by the sweeps themselves,,,2020-01..2026-05
+headline,actual_rate_top_unswept_pct,98.49535994233715,realized rate despite no sweep (understates latent risk),,,2020-01..2026-05
+headline,units_median_swept,4.0,,,,2020-01..2026-05
+headline,units_median_top_unswept,65.0,,,,2020-01..2026-05
+headline,share_100plus_units_swept,0.08424182358771061,,,,2020-01..2026-05
+headline,share_100plus_units_top_unswept,0.2762411028020542,,,,2020-01..2026-05
+headline,share_prior_viol_swept,0.5490584737363726,any 2010-19 violation history,,,2020-01..2026-05
+headline,share_prior_viol_top_unswept,1.0,,,,2020-01..2026-05
+headline,model_auc,0.8798621050106873,in-sample rank AUC,,,2020-01..2026-05
+headline,model_params,33.0,,,,2020-01..2026-05
+headline,panel_base_rate_pct,19.760003546617153,,,,2020-01..2026-05
+headline,n_panel_scored,766928.0,,,,2020-01..2026-05
+calibration,pred_decile_01,3.070912605956942,value = mean predicted risk (pct),2.3209419373345677,76693.0,2020-01..2026-05
+calibration,pred_decile_02,3.9088558936005313,value = mean predicted risk (pct),3.0993702163170043,76693.0,2020-01..2026-05
+calibration,pred_decile_03,4.472015516508018,value = mean predicted risk (pct),3.7656630983270962,76693.0,2020-01..2026-05
+calibration,pred_decile_04,4.930142006067088,value = mean predicted risk (pct),4.252073227976842,76692.0,2020-01..2026-05
+calibration,pred_decile_05,5.477340287926859,value = mean predicted risk (pct),5.274275357594566,76693.0,2020-01..2026-05
+calibration,pred_decile_06,6.2757710729222715,value = mean predicted risk (pct),6.244376931401823,76693.0,2020-01..2026-05
+calibration,pred_decile_07,7.895667224819021,value = mean predicted risk (pct),9.053095498878632,76692.0,2020-01..2026-05
+calibration,pred_decile_08,29.707246620423923,value = mean predicted risk (pct),33.730588189274116,76693.0,2020-01..2026-05
+calibration,pred_decile_09,51.17470129039009,value = mean predicted risk (pct),52.7062443769314,76693.0,2020-01..2026-05
+calibration,pred_decile_10,80.68703488196797,value = mean predicted risk (pct),77.15306481686724,76693.0,2020-01..2026-05
