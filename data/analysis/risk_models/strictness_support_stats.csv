@@ -1,0 +1,13 @@
+metric,value
+pool_comments_per_side,32060.0
+qualifying_inspectors,600.0
+qualifying_units,15.0
+pool_len_strict,132.9
+pool_len_lenient,84.4
+noviol_pool_per_side,13200.0
+noviol_floor10_strict_inspectors,92.0
+noviol_floor10_lenient_inspectors,124.0
+marker_observed_unsafe_strict,0.542
+marker_observed_unsafe_lenient,0.265
+marker_swo_rescind_dated_strict,0.07
+marker_swo_rescind_dated_lenient,0.214

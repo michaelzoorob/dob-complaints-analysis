@@ -42,4 +42,4 @@ SAVE_RAW_HTML = True
 # ── Scope ───────────────────────────────────────────────────────────────────
 # Phase 1: 2024-2025. Change min_year to expand.
 
-SCRAPE_MIN_YEAR = 2021
+SCRAPE_MIN_YEAR = 2020

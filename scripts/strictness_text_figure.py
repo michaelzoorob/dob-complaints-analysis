@@ -339,6 +339,31 @@ def main():
     print("no-viol most lenient-typical:", ", ".join(z_nv.head(10)["word"]))
     print("no-viol most strict-typical:", ", ".join(list(z_nv.tail(10)["word"])[::-1]))
 
+    # support stats quoted in the post: pool sizes, comment lengths, and
+    # marker-word shares among no-violation reports (inspectors contributing
+    # >= 10 such reports to their pool)
+    sup = [dict(metric="pool_comments_per_side", value=len(strict)),
+           dict(metric="qualifying_inspectors", value=len(insp)),
+           dict(metric="qualifying_units", value=insp["unit"].nunique()),
+           dict(metric="pool_len_strict", value=round(strict.str.len().mean(), 1)),
+           dict(metric="pool_len_lenient", value=round(lenient.str.len().mean(), 1)),
+           dict(metric="noviol_pool_per_side", value=len(s_nv))]
+    mnv2 = mnv.copy()
+    cnt = mnv2.groupby("inspector_badge").size()
+    mnv2 = mnv2[mnv2["inspector_badge"].map(cnt) >= 10]
+    sq = mnv2[mnv2["q"] == 4]; lq = mnv2[mnv2["q"] == 0]
+    sup.append(dict(metric="noviol_floor10_strict_inspectors",
+                    value=sq["inspector_badge"].nunique()))
+    sup.append(dict(metric="noviol_floor10_lenient_inspectors",
+                    value=lq["inspector_badge"].nunique()))
+    for pat, name in [("observed|unsafe", "observed_unsafe"),
+                      ("swo|rescind|dated", "swo_rescind_dated")]:
+        for pool, side in [(sq, "strict"), (lq, "lenient")]:
+            share = pool["comments"].fillna("").str.lower().str.contains(pat).mean()
+            sup.append(dict(metric=f"marker_{name}_{side}", value=round(share, 3)))
+    pd.DataFrame(sup).to_csv(OUT / "strictness_support_stats.csv", index=False)
+    print("support stats saved -> strictness_support_stats.csv")
+
 
 if __name__ == "__main__":
     main()

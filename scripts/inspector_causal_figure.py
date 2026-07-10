@@ -13,8 +13,8 @@ Produces:
         (category x unit x year-month): any permit filing and any future
         ECB violation, 30 to 365 days after inspection.
 
-Estimates are transcribed from the July 2026 run of
-scripts/compliance_analysis.py on the rebuilt master panel (N = 550,087);
+Estimates are read from risk_models/inspector_clustered_estimates.csv
+(inspector_clustered_estimates.py, CRV1 by inspector, N = 550,087);
 re-run that script to reproduce them. Betas are per 1.0 change in
 leave-one-out strictness; the figure rescales to percentage points per
 10pp-stricter inspector (beta * 0.10 * 100).

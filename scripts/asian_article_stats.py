@@ -32,6 +32,11 @@ from disposition_codes import classify_disposition
 from build_risk_dataset import CATEGORY_GROUPS
 
 PANEL = config.DATA_DIR / "analysis" / "property_risk_panel_v2.csv.gz"
+ROWS = []
+
+
+def rec(metric, value):
+    ROWS.append(dict(metric=metric, value=value))
 B_COMPLAINTS = 0.3185   # bisg_ppml_ncomp p_asian (owner_tidy_estimates.csv)
 GAP_SUBST = 2.42        # insp_viol_pooled p_asian, pp (asian_heterogeneity.csv)
 GAP_NOACC = 2.43        # insp_noacc_pooled p_asian, pp
@@ -62,6 +67,13 @@ def raw_rates(bs):
               f"substantive/complaint {d['n_substantive'].sum()/d['n_complaints'].sum():.3f} | "
               f"viol/substantive {d['n_viol_disp'].sum()/d['n_substantive'].sum():.3f} | "
               f"viol/100 complaints {d['n_viol_disp'].sum()/d['n_complaints'].sum()*100:.1f}")
+        rec(f"n_{g}_classified", n)
+        rec(f"{g}_substantive_per100_complaints",
+            round(d['n_substantive'].sum()/d['n_complaints'].sum()*100, 1))
+        rec(f"{g}_viol_per100_substantive",
+            round(d['n_viol_disp'].sum()/d['n_substantive'].sum()*100, 1))
+        rec(f"{g}_viol_per100_complaints",
+            round(d['n_viol_disp'].sum()/d['n_complaints'].sum()*100, 1))
 
     conn = sqlite3.connect(str(config.DB_PATH))
     c = pd.read_sql_query("""
@@ -89,6 +101,7 @@ def raw_rates(bs):
     for g in ["asian", "white"]:
         d = conv[conv["grp"] == g]
         print(f"{g} conversion complaints: {len(d):,}, no-access share {(d['outc']=='no_access').mean():.3f}")
+        rec(f"{g}_conversion_no_access_share", round((d['outc']=='no_access').mean(), 3))
 
 
 def sizing(bs):
@@ -140,6 +153,8 @@ def interacted_fe(bs_full):
     t = m.tidy().loc["p_asian"]
     print(f"cells: {df['cell'].nunique():,}; p_asian b={t['Estimate']:.4f} "
           f"({(np.exp(t['Estimate'])-1)*100:+.1f}%), N={m._N:,}")
+    rec("interacted_fe_pct", round((np.exp(t['Estimate'])-1)*100, 1))
+    rec("interacted_fe_cells", df['cell'].nunique())
 
 
 def nonwhite_contrasts(bs_full):
@@ -177,12 +192,15 @@ def nonwhite_contrasts(bs_full):
             eff = (np.exp(d) - 1) * 100 if scale == "pct" else d
             unit = "%" if scale == "pct" else "pp"
             print(f"   Asian vs {other}: {eff:+.1f}{unit} (z={d/se:.1f})")
+            rec(f"contrast_{contrast.tag}_asian_vs_{other.lower()}", round(eff, 1))
 
     print("\n== 5. Asian vs non-white non-Asian contrasts ==")
+    contrast.tag = "complaints"
     print("complaints (PPML)")
     m = pf.fepois(f"n_complaints ~ {X} | size_bin + bct2020", data=df,
                   vcov={"CRV1": "bct2020"})
     contrast(m, "pct")
+    contrast.tag = "conversion"
     print("conversion complaints (PPML)")
     m = pf.fepois(f"n_conv ~ {X} | size_bin + bct2020", data=df,
                   vcov={"CRV1": "bct2020"})
@@ -209,10 +227,12 @@ def nonwhite_contrasts(bs_full):
              "geo_unknown", "multi_prop_owner"])
     insp = c.merge(df[keep], on="bbl_key")
     sub = insp[insp["outcome"].isin(["violation", "no_violation"])]
+    contrast.tag = "viol_per_substantive"
     print("violations per substantive inspection (LPM, pp)")
     m = pf.feols(f"viol100 ~ {X} | complaint_category + size_bin + bct2020",
                  data=sub, vcov={"CRV1": "bct2020"})
     contrast(m, "pp")
+    contrast.tag = "noaccess_per_complaint"
     print("no-access per complaint (LPM, pp)")
     m = pf.feols(f"noacc100 ~ {X} | complaint_category + size_bin + bct2020",
                  data=insp, vcov={"CRV1": "bct2020"})
@@ -236,6 +256,7 @@ def reduced_form_and_marginal(bs):
     total = 1.374 * a
     marginal = (total - base) / 0.374
     print(f"  violations per 100 complaints: white {base:.1f}, asian adjusted {a:.1f}")
+    rec("white_viol_per100_complaints_product", round(base, 1))
     print(f"  product-implied total at 1.37x volume: {total:.1f} (+{(total/base-1)*100:.0f}%)")
     print(f"  product-implied marginal substantiation: {marginal:.1f} per 100")
     B_VIOL = 0.1102  # bisg_ppml_viol p_asian (citation_tidy_estimates.csv)
@@ -243,6 +264,7 @@ def reduced_form_and_marginal(bs):
     print(f"  direct count model: +{g*100:.0f}% disposition violations -> "
           f"level {6.36*(1+g):.1f} vs 6.4 per 100; "
           f"marginal substantiation {base*g/0.374:.1f} per 100 (quoted in text)")
+    rec("marginal_substantiation_per100", round(base*g/0.374, 1))
 
 
 if __name__ == "__main__":
@@ -253,3 +275,6 @@ if __name__ == "__main__":
     interacted_fe(bs)
     nonwhite_contrasts(bs)
     reduced_form_and_marginal(bs)
+    out = config.DATA_DIR / "analysis" / "risk_models" / "asian_article_stats.csv"
+    pd.DataFrame(ROWS).to_csv(out, index=False)
+    print(f"saved -> {out}")

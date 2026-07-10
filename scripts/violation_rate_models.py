@@ -34,7 +34,7 @@ from analysis_config import make_bbl
 
 PANEL = config.DATA_DIR / "analysis" / "property_risk_panel_v2.csv.gz"
 OUT = config.DATA_DIR / "analysis" / "risk_models"
-YEARS = 6.25  # Jan 2020 - Apr 2026
+YEARS = 6.25  # ECB data are complete through March 2026: Jan 2020 - Mar 2026 = 75 months
 
 BUILDING_COVARS = [
     "llc", "corp_other", "trust_estate", "nycha", "govt",
@@ -204,6 +204,8 @@ def main():
     add("All residential", df["unitsres"] >= 0)
     add("LLC", df["llc"] == 1)
     add("Individual", df["owner_type"] == "individual")
+    add("NYCHA", df["nycha"] == 1)
+    add("Trust/estate", df["trust_estate"] == 1)
     add("Owner-occupied (STAR)", df["owner_occ_star"] == 1)
     add("Pre-1940", df["era_pre1940"] == 1)
     add("Built 2000+", (df[["era_pre1940", "era_4079", "era_8099", "era_unknown"]].sum(axis=1)) == 0)

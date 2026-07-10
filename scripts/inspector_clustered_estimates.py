@@ -10,6 +10,10 @@ Blocks written:
   ladder365   one-year any-permit and any-new-ECB under six FE ladders
   ladder90    90-day any-permit under the same ladders
   windows     both outcomes at 30/60/90/180/365d inside cat x unit x ym x NTA
+  penalty     log(1+ECB penalty dollars imposed within 365d) under the three
+              main cell definitions; the effect is cell-definition dependent
+              (null in cat x unit x ym, positive in NTA and tract cells), so
+              the post must report the spec dependence, not a single verdict
   tract       first stage + key downstream outcomes inside census-tract cells
               (identification comes from the ~35% of inspections that share a
               cat x unit x ym x tract cell with another inspection)
@@ -76,6 +80,7 @@ def load_panel() -> pd.DataFrame:
     df["none"] = "all"
     for w in WINDOWS:
         df[f"ecb{w}"] = (df[f"future_ecb_{w}d"] > 0).astype(float)
+    df["log_pen365"] = np.log1p(pd.to_numeric(df["future_penalty_365d"], errors="coerce"))
     return df
 
 
@@ -105,6 +110,12 @@ def main():
     rows = []
     for lbl, fe in FS:
         run(df, rows, "violation_found", fe, "firststage", lbl)
+    run(df, rows, "violation_found", "cell_nta", "firststage", "+ NTA (neighborhood)")
+    run(df, rows, "violation_found", "cell_tract", "firststage", "+ census tract")
+    for lbl, fe in [("Category x unit x month", "cat_unit_ym"),
+                    ("+ NTA (neighborhood)", "cell_nta"),
+                    ("+ census tract", "cell_tract")]:
+        run(df, rows, "log_pen365", fe, "penalty", lbl)
     for lbl, fe in LADDER:
         run(df, rows, "any_permit_365d", fe, "ladder365", lbl)
         run(df, rows, "ecb365", fe, "ladder365", lbl)

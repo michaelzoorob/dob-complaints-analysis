@@ -1,0 +1,10 @@
+metric,value
+universe_lots,766939.0
+matched_complaints_2020_may2026,648363.0
+owner_geo_coverage_share,0.7041250999101624
+pearson_n_viol_disp_vs_n_ecb_2020on,0.7886261274134909
+spearman_n_viol_disp_vs_n_ecb_2020on,0.835352973297917
+pearson_n_viol_disp_vs_n_dobviol_union,0.4199364550262106
+spearman_n_viol_disp_vs_n_dobviol_union,0.3870712353979461
+pearson_n_ecb_2020on_vs_n_dobviol_union,0.40699726960973964
+spearman_n_ecb_2020on_vs_n_dobviol_union,0.40634154852543014

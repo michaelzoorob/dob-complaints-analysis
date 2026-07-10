@@ -98,6 +98,11 @@ def main():
             rows.append(dict(block="ppml", era=era, outcome=lab, b=b, se=se,
                              t=b / se, n=int(m._N)))
             print(f"  {lab:<22} {era:<10} {(np.exp(b)-1)*100:+6.1f}% (t={b/se:+.1f})")
+        bd, sed = float(m.coef()["dmiss"]), float(m.se()["dmiss"])
+        rows.append(dict(block="ppml", era="no deed found", outcome=lab, b=bd, se=sed,
+                         t=bd / sed, n=int(m._N)))
+    rows.append(dict(block="meta", era="panel", outcome="residential_lots",
+                     b=len(df), se=np.nan, t=np.nan, n=len(df)))
     pd.DataFrame(rows).to_csv(OUT, index=False)
     print(f"saved -> {OUT}")
 

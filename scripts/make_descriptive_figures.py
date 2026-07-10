@@ -29,6 +29,7 @@ import config
 from disposition_codes import classify_disposition
 
 ART = config.DATA_DIR / "analysis" / "blog_posts" / "artifacts"
+RM = config.DATA_DIR / "analysis" / "risk_models"
 PANEL = config.DATA_DIR / "analysis" / "property_risk_panel.csv.gz"
 
 SURFACE = "#fcfcfb"
@@ -63,6 +64,7 @@ def fig_timeline(conn):
         FROM open_data o JOIN bis_scrape b USING(complaint_number)
         GROUP BY 1 ORDER BY 1""", conn)
     tl = tl[tl.ym <= "2026-05"]  # window ends with complete May 2026
+    tl.to_csv(RM / "desc_monthly.csv", index=False)
     x = pd.to_datetime(tl.ym + "-01")
     fig, ax = plt.subplots(figsize=(12.5, 5.2), dpi=160)
     ax.fill_between(x, tl.n, color=BLUE, alpha=0.10, linewidth=0)
@@ -94,6 +96,8 @@ def fig_outcomes(conn):
     rows["outc"] = rows.disposition_code.fillna("").astype(str).map(classify_disposition)
     g = rows.groupby("outc").n.sum()
     total = g.sum()
+    (g.rename("n").to_frame().assign(share=lambda d: d.n / total)
+       .to_csv(RM / "desc_outcome_shares.csv"))
     order = [
         ("no_violation", "No violation found"),
         ("violation", "Violation issued"),
@@ -150,14 +154,18 @@ def fig_categories(conn):
     cat["outc"] = cat.disposition_code.fillna("").astype(str).map(classify_disposition)
     cat["code2"] = cat.cat.str.strip().str[:2]
     top = cat.code2.value_counts().head(10)
+    QUOTED = ["04", "7G", "8A", "45", "6S", "05"]  # codes the posts cite by name
+    codes = list(dict.fromkeys(list(top.index) + QUOTED))
     rows = []
-    for code in top.index:
+    for code in codes:
         s = cat[cat.code2 == code]
         o = s.outc.value_counts(normalize=True)
         rows.append(dict(code=code, n=len(s), viol=o.get("violation", 0),
                          noviol=o.get("no_violation", 0), noacc=o.get("no_access", 0)))
     df = pd.DataFrame(rows)
+    df.to_csv(RM / "desc_category_outcomes.csv", index=False)
     print(df.round(3).to_string(index=False))
+    df = df.head(10)
     df["other"] = 1 - df.viol - df.noviol - df.noacc
     fig, ax = plt.subplots(figsize=(12.5, 6.6), dpi=160)
     y = np.arange(len(df))[::-1]
@@ -198,6 +206,14 @@ def fig_size(df):
         rows.append(dict(bin=lab, props=len(s), units=int(s.unitsres.sum()),
                          cpu=s.n_complaints.sum() / s.unitsres.sum(),
                          vpu=s.n_viol_disp.sum() / s.unitsres.sum()))
+    s24 = df[(df.unitsres >= 2) & (df.unitsres <= 4)]
+    csv_rows = rows + [dict(bin="2-4 combined", props=len(s24),
+                            units=int(s24.unitsres.sum()),
+                            cpu=s24.n_complaints.sum() / s24.unitsres.sum(),
+                            vpu=s24.n_viol_disp.sum() / s24.unitsres.sum())]
+    pd.DataFrame(csv_rows).assign(cpu_per100=lambda d: d.cpu * 100,
+                                  vpu_per100=lambda d: d.vpu * 100) \
+        .to_csv(RM / "desc_per_unit_size.csv", index=False)
     d = pd.DataFrame(rows)
     fig, axes = plt.subplots(2, 1, figsize=(11.5, 7.4), dpi=160, sharex=True)
     x = np.arange(len(d))
@@ -237,6 +253,7 @@ def fig_star(df):
     d = pd.DataFrame(rows)
     d["cpu"] *= 100
     d["vpu"] *= 100
+    d.to_csv(RM / "desc_star_gap.csv", index=False)
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.9), dpi=160)
     for ax, col, ttl in [(axes[0], "cpu", "Complaints per 100 units"),
                          (axes[1], "vpu", "Violations per 100 units")]:
@@ -269,6 +286,7 @@ def fig_borough(df):
     b["name"] = b.borough.map(names)
     b["cpu"] = b.compl / b.units * 100
     b = b.sort_values("cpu")
+    b.to_csv(RM / "desc_borough.csv", index=False)
     fig, ax = plt.subplots(figsize=(10.5, 4.4), dpi=160)
     y = np.arange(len(b))
     ax.barh(y, b.cpu, height=0.6, color=BLUE)
