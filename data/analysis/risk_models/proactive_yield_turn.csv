@@ -1,0 +1,268 @@
+block,model,term,estimate,std_error,25pct,975pct,n,note,window
+yearly_yield,raw,yield_2020,33.24400888140265,0.5203532721390453,32.22411646801012,34.263901294795176,13061.0,"violation yield (pp), all events; CI tract-clustered on the 11,345 tract-located events (1964 tracts)",2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2020,0.0,,,,13061.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2020,4.693361917157951,,,,13061.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2020,0.2067223030395835,,,,13061.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2020,1.240333818237501,,,,13061.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,raw,yield_2021,28.437682855471035,0.4445065743880734,27.566449969670412,29.308915741271658,17090.0,"violation yield (pp), all events; CI tract-clustered on the 15,100 tract-located events (1997 tracts)",2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2021,0.0,,,,17090.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2021,2.305441778818022,,,,17090.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2021,0.12873025160912815,,,,17090.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2021,0.8894090111176126,,,,17090.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,raw,yield_2022,27.656856734109954,0.4627021602730657,26.749960499974744,28.563752968245165,19572.0,"violation yield (pp), all events; CI tract-clustered on the 17,721 tract-located events (2064 tracts)",2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2022,0.0,,,,19572.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2022,2.432045779685265,,,,19572.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2022,0.5824647455548744,,,,19572.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2022,1.7269568771714694,,,,19572.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,raw,yield_2023,31.178073052760325,0.5444022435459551,30.111044655410254,32.2451014501104,17987.0,"violation yield (pp), all events; CI tract-clustered on the 16,789 tract-located events (2059 tracts)",2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2023,0.0,,,,17987.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2023,1.856896647578807,,,,17987.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2023,0.3558125312725857,,,,17987.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2023,1.0729971646188914,,,,17987.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,raw,yield_2024,30.69546068054273,0.5413212211814004,29.634471087027187,31.756450274058274,14077.0,"violation yield (pp), all events; CI tract-clustered on the 13,431 tract-located events (2018 tracts)",2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2024,0.0,,,,14077.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2024,1.2005398877601763,,,,14077.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2024,0.2912552390424096,,,,14077.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2024,1.1721247424877461,,,,14077.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,raw,yield_2025,41.53384882436484,0.6815678488887883,40.19797584054281,42.86972180818687,12674.0,"violation yield (pp), all events; CI tract-clustered on the 12,406 tract-located events (2003 tracts)",2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2025,0.023670506548840148,,,,12674.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2025,1.0099416127505128,,,,12674.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2025,1.6017042764715166,,,,12674.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2025,0.9310399242543791,,,,12674.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,raw,yield_2026,43.813935533680755,0.8571003114681057,42.13401892320327,45.49385214415824,5181.0,"violation yield (pp), all events; CI tract-clustered on the 5,114 tract-located events (1477 tracts)",2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2026,0.0,,,,5181.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2026,0.9843659525188188,,,,5181.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2026,5.134143987647173,,,,5181.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2026,0.5597375024126616,,,,5181.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,raw,yield_2024_janmay,27.769551756629426,,,,7429.0,2024 Jan-May only; seasonal anchor for the 2026 comparison,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__total_change_pp,10.838388143822108,,,,12674.0,"yield 30.70 -> 41.53 pp; n base 14,077",2020-01..2026-05
+decomposition,symmetric,2024_to_2025__within_total_pp,4.861684275574473,,,,,sum of avg-weight x yield-change terms over prefixes,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__composition_total_pp,5.976703868247639,,,,,sum of weight-change x (avg yield - overall) terms,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__within_share_of_change,44.856155832965236,,,,,within_total / total_change (pct),2020-01..2026-05
+decomposition,laspeyres,2024_to_2025__within_total_pp,4.564355853078051,,,,,2024 weights,2020-01..2026-05
+decomposition,laspeyres,2024_to_2025__composition_total_pp,5.679375445751216,,,,,weight change x base yield (centered at base mean),2020-01..2026-05
+decomposition,laspeyres,2024_to_2025__interaction_pp,0.5946568449928452,,,,,,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__within__8A,0.41925681031787215,,,,,yield 55.2->56.8 pp at avg weight 25.6%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__composition__8A,1.8597383958426459,,,,,share 20.9%->30.3%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__within__7G,-0.462631773894469,,,,,yield 9.3->7.0 pp at avg weight 20.5%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__composition__7G,1.989592191516433,,,,,share 24.0%->16.9%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__within__1X,1.3379263053611732,,,,,yield 25.0->30.5 pp at avg weight 24.4%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__composition__1X,-0.5508990535009586,,,,,share 21.2%->27.7%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__within__91,-0.015383784806748744,,,,,yield 20.3->20.0 pp at avg weight 5.0%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__composition__91,0.17120179906797114,,,,,share 5.5%->4.4%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__within__6X,-0.060011868529793545,,,,,yield 9.3->7.7 pp at avg weight 3.9%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__composition__6X,1.1204797341462414,,,,,share 5.9%->1.8%,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__within__other_prefixes,3.642528587126438,,,,,6 smaller prefixes,2020-01..2026-05
+decomposition,symmetric,2024_to_2025__composition__other_prefixes,1.3865908011753063,,,,,,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__total_change_pp,13.118474853138025,,,,5181.0,"yield 30.70 -> 43.81 pp; n base 14,077",2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__within_total_pp,7.384197217098398,,,,,sum of avg-weight x yield-change terms over prefixes,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__composition_total_pp,5.734277636039626,,,,,sum of weight-change x (avg yield - overall) terms,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__within_share_of_change,56.2885342981166,,,,,within_total / total_change (pct),2020-01..2026-05
+decomposition,laspeyres,2024_to_2026jm__within_total_pp,7.241086377762519,,,,,2024 weights,2020-01..2026-05
+decomposition,laspeyres,2024_to_2026jm__composition_total_pp,5.591166796703747,,,,,weight change x base yield (centered at base mean),2020-01..2026-05
+decomposition,laspeyres,2024_to_2026jm__interaction_pp,0.28622167867175907,,,,,,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__within__8A,3.7741489731821636,,,,,yield 55.2->68.0 pp at avg weight 29.3%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__composition__8A,4.082414364734923,,,,,share 20.9%->37.7%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__within__7G,0.9993166298652509,,,,,yield 9.3->14.0 pp at avg weight 20.9%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__composition__7G,1.6119579845463814,,,,,share 24.0%->17.7%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__within__1X,-1.0408246161402115,,,,,yield 25.0->20.4 pp at avg weight 22.6%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__composition__1X,-0.41067868484493214,,,,,share 21.2%->24.0%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__within__91,0.857664475472422,,,,,yield 20.3->37.2 pp at avg weight 5.1%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__composition__91,0.06976291619870607,,,,,share 5.5%->4.7%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__within__6X,-0.12266958063096123,,,,,yield 9.3->6.6 pp at avg weight 4.6%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__composition__6X,0.7837457704429598,,,,,share 5.9%->3.2%,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__within__other_prefixes,2.9165613353497344,,,,,6 smaller prefixes,2020-01..2026-05
+decomposition,symmetric,2024_to_2026jm__composition__other_prefixes,-0.4029247150384124,,,,,,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__total_change_pp,16.04438377705133,,,,5181.0,"yield 27.77 -> 43.81 pp; n base 7,429",2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__within_total_pp,8.15620328175602,,,,,sum of avg-weight x yield-change terms over prefixes,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__composition_total_pp,7.888180495295309,,,,,sum of weight-change x (avg yield - overall) terms,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__within_share_of_change,50.83525422411071,,,,,within_total / total_change (pct),2020-01..2026-05
+decomposition,laspeyres,2024jm_to_2026jm__within_total_pp,9.082123473244433,,,,,2024 weights,2020-01..2026-05
+decomposition,laspeyres,2024jm_to_2026jm__composition_total_pp,8.814100686783723,,,,,weight change x base yield (centered at base mean),2020-01..2026-05
+decomposition,laspeyres,2024jm_to_2026jm__interaction_pp,-1.8518403829768282,,,,,,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__within__8A,3.2331268872630416,,,,,yield 56.1->68.0 pp at avg weight 27.1%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__composition__8A,5.555817949202187,,,,,share 16.6%->37.7%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__within__7G,1.0122202886002825,,,,,yield 9.4->14.0 pp at avg weight 21.9%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__composition__7G,2.0218755192385074,,,,,share 26.1%->17.7%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__within__1X,-1.0856539789516682,,,,,yield 25.5->20.4 pp at avg weight 21.3%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__composition__1X,-0.6911207998880803,,,,,share 18.6%->24.0%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__within__91,0.8444021326814056,,,,,yield 19.6->37.2 pp at avg weight 4.8%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__composition__91,0.019885997546305052,,,,,share 4.9%->4.7%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__within__6X,-0.14966039232960934,,,,,yield 9.8->6.6 pp at avg weight 4.7%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__composition__6X,0.8235842250052913,,,,,share 6.2%->3.2%,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__within__other_prefixes,4.301768344492568,,,,,6 smaller prefixes,2020-01..2026-05
+decomposition,symmetric,2024jm_to_2026jm__composition__other_prefixes,0.15813760419109804,,,,,,2020-01..2026-05
+lpm_year_effects,pooled_cat_fe,2020,-2.6435187660944686,0.6676873348952806,-3.9528640534949924,-1.3341734786939448,91906.0,"LPM year dummies | category_prefix, tract-clustered",2020-01..2026-05
+lpm_year_effects,pooled_cat_fe,2021,-2.142047161066195,0.5953899991043793,-3.309616244303318,-0.9744780778290714,91906.0,"LPM year dummies | category_prefix, tract-clustered",2020-01..2026-05
+lpm_year_effects,pooled_cat_fe,2022,0.09829067652137381,0.576807115777451,-1.0328370824030109,1.2294184354457585,91906.0,"LPM year dummies | category_prefix, tract-clustered",2020-01..2026-05
+lpm_year_effects,pooled_cat_fe,2023,0.900936930334095,0.6105435365200002,-0.2963484763461002,2.09822233701429,91906.0,"LPM year dummies | category_prefix, tract-clustered",2020-01..2026-05
+lpm_year_effects,pooled_cat_fe,2025,4.329212065949996,0.7885379483716989,2.7828768388501848,5.875547293049807,91906.0,"LPM year dummies | category_prefix, tract-clustered",2020-01..2026-05
+lpm_year_effects,pooled_cat_fe,2026,6.090472410570234,0.835812462658673,4.451431122922627,7.729513698217841,91906.0,"LPM year dummies | category_prefix, tract-clustered",2020-01..2026-05
+lpm_year_effects,pooled_cat_fe_janmay,2020,-1.4285259612650902,0.9380324507685273,-3.268034191478263,0.41098226894808265,42800.0,Jan-May months only in every year (seasonal match),2020-01..2026-05
+lpm_year_effects,pooled_cat_fe_janmay,2021,-3.8675341087925434,0.8930992126041778,-5.6189269850584935,-2.1161412325265934,42800.0,Jan-May months only in every year (seasonal match),2020-01..2026-05
+lpm_year_effects,pooled_cat_fe_janmay,2022,-0.28282141958031126,0.8236800151479761,-1.8980812815237247,1.332438442363102,42800.0,Jan-May months only in every year (seasonal match),2020-01..2026-05
+lpm_year_effects,pooled_cat_fe_janmay,2023,0.8027099428748516,0.8448721943853713,-0.8541083833747831,2.4595282691244864,42800.0,Jan-May months only in every year (seasonal match),2020-01..2026-05
+lpm_year_effects,pooled_cat_fe_janmay,2025,4.4699510427349445,1.4272174441241108,1.6711371716165773,7.268764913853312,42800.0,Jan-May months only in every year (seasonal match),2020-01..2026-05
+lpm_year_effects,pooled_cat_fe_janmay,2026,5.861616152613192,0.9489827570193824,4.000634061388815,7.722598243837569,42800.0,Jan-May months only in every year (seasonal match),2020-01..2026-05
+lpm_year_effects,program_8A,2020,-0.11529167094474224,1.2608114330165943,-2.5879706594434415,2.3573873175539566,22752.0,,2020-01..2026-05
+lpm_year_effects,program_8A,2021,1.1536460697530737,1.2219741734444298,-1.2428660366884121,3.5501581761945595,22752.0,,2020-01..2026-05
+lpm_year_effects,program_8A,2022,3.117206326766686,1.2691960636594448,0.6280835628754251,5.6063290906579475,22752.0,,2020-01..2026-05
+lpm_year_effects,program_8A,2023,1.9595487897880335,1.381044423529809,-0.7489288134607559,4.668026393036823,22752.0,,2020-01..2026-05
+lpm_year_effects,program_8A,2025,1.6745392277727427,1.401246707915037,-1.0735587047425024,4.422637160287987,22752.0,,2020-01..2026-05
+lpm_year_effects,program_8A,2026,12.533935787297624,1.6760562939694958,9.246886611574592,15.820984963020656,22752.0,,2020-01..2026-05
+program_year_yield,raw_8A,2020,55.31091936923535,0.7488023165538216,53.84326682878986,56.77857190968084,3361.0,"tract-located events; 4,267 total, 1087 tracts",2020-01..2026-05
+program_year_yield,raw_8A,2021,56.579857109933165,0.6718753076541656,55.262981506931,57.89673271293533,4339.0,"tract-located events; 5,098 total, 1193 tracts",2020-01..2026-05
+program_year_yield,raw_8A,2022,58.54341736694678,0.8016570859156457,56.97216947855211,60.11466525534144,3927.0,"tract-located events; 4,569 total, 1213 tracts",2020-01..2026-05
+program_year_yield,raw_8A,2023,57.385759829968116,0.968958577498105,55.48660101807183,59.2849186418644,2823.0,"tract-located events; 3,259 total, 968 tracts",2020-01..2026-05
+program_year_yield,raw_8A,2024,55.42621104018025,1.05910563798234,53.35036398973486,57.50205809062564,2663.0,"tract-located events; 2,947 total, 884 tracts",2020-01..2026-05
+program_year_yield,raw_8A,2025,57.10075026795284,1.0197515926666616,55.10203714632618,59.0994633895795,3732.0,"tract-located events; 3,839 total, 1067 tracts",2020-01..2026-05
+program_year_yield,raw_8A,2026,67.96014682747771,1.3172234614783,65.37838884298024,70.54190481197519,1907.0,"tract-located events; 1,953 total, 747 tracts",2020-01..2026-05
+lpm_year_effects,program_7G,2020,-4.004984947102838,0.9556360980444606,-5.879085728268901,-2.130884165936775,23468.0,,2020-01..2026-05
+lpm_year_effects,program_7G,2021,-2.261313190512997,0.6745326201931764,-3.584141109019702,-0.9384852720062917,23468.0,,2020-01..2026-05
+lpm_year_effects,program_7G,2022,0.13602467626781561,0.683075157785701,-1.2035560380029378,1.475605390538569,23468.0,,2020-01..2026-05
+lpm_year_effects,program_7G,2023,0.5210775082142581,0.7291045728346902,-0.9087716281854322,1.9509266446139484,23468.0,,2020-01..2026-05
+lpm_year_effects,program_7G,2025,-2.2379958385735503,0.8184768034203677,-3.8431131209734968,-0.6328785561736037,23468.0,,2020-01..2026-05
+lpm_year_effects,program_7G,2026,4.594916222391479,1.3279027462605784,1.9907622152625768,7.199070229520381,23468.0,,2020-01..2026-05
+program_year_yield,raw_7G,2020,5.2462526766595285,0.7492591755374856,3.777704692606057,6.714800660713,934.0,"tract-located events; 1,137 total, 540 tracts",2020-01..2026-05
+program_year_yield,raw_7G,2021,6.98992443324937,0.39597969896796886,6.213804223272151,7.766044643226589,4764.0,"tract-located events; 5,538 total, 1423 tracts",2020-01..2026-05
+program_year_yield,raw_7G,2022,9.387262300030184,0.4118264211194207,8.58008251463612,10.194442085424248,6626.0,"tract-located events; 7,324 total, 1413 tracts",2020-01..2026-05
+program_year_yield,raw_7G,2023,9.772315131976628,0.48371302150344603,8.824237609829874,10.720392654123382,4963.0,"tract-located events; 5,336 total, 1454 tracts",2020-01..2026-05
+program_year_yield,raw_7G,2024,9.251237623762377,0.5586711488415447,8.156242172032949,10.346233075491805,3232.0,"tract-located events; 3,383 total, 1261 tracts",2020-01..2026-05
+program_year_yield,raw_7G,2025,7.013241785188818,0.6304454093907144,5.7775687827830176,8.248914787594618,2039.0,"tract-located events; 2,145 total, 943 tracts",2020-01..2026-05
+program_year_yield,raw_7G,2026,13.846153846153847,1.2052298670034471,11.48390330682709,16.208404385480602,910.0,"tract-located events; 919 total, 531 tracts",2020-01..2026-05
+lpm_year_effects,program_1X,2020,4.201987722888009,1.6364552222266826,0.9927911469806876,7.41118429879533,21369.0,,2020-01..2026-05
+lpm_year_effects,program_1X,2021,1.8613607188703103,1.7262103217915181,-1.5238515244878807,5.246572962228502,21369.0,,2020-01..2026-05
+lpm_year_effects,program_1X,2022,1.3481901009603214,1.5276013800900932,-1.6475369142071894,4.343917116127832,21369.0,,2020-01..2026-05
+lpm_year_effects,program_1X,2023,0.4799869834038007,1.58569552808013,-2.629666485893143,3.5896404527007446,21369.0,,2020-01..2026-05
+lpm_year_effects,program_1X,2025,5.510407755916705,2.040798257559357,1.508267830960114,9.512547680873297,21369.0,,2020-01..2026-05
+lpm_year_effects,program_1X,2026,-4.661016949152578,1.847501435486043,-8.284089062716577,-1.0379448355885792,21369.0,,2020-01..2026-05
+program_year_yield,raw_1X,2020,29.201987722888045,0.9774860403128677,27.286115083874826,31.117860361901265,3421.0,"tract-located events; 3,551 total, 1402 tracts",2020-01..2026-05
+program_year_yield,raw_1X,2021,26.861360718870348,1.2061255471614345,24.497354646433937,29.225366791306758,3116.0,"tract-located events; 3,208 total, 1290 tracts",2020-01..2026-05
+program_year_yield,raw_1X,2022,26.348190100960355,0.8893614344151142,24.60504168950673,28.09133851241398,4061.0,"tract-located events; 4,160 total, 1478 tracts",2020-01..2026-05
+program_year_yield,raw_1X,2023,25.47998698340384,1.0387159803193133,23.444103661977987,27.515870304829694,3073.0,"tract-located events; 3,121 total, 1243 tracts",2020-01..2026-05
+program_year_yield,raw_1X,2024,25.0,1.330293081661203,22.392625559944044,27.607374440055956,2952.0,"tract-located events; 2,978 total, 1207 tracts",2020-01..2026-05
+program_year_yield,raw_1X,2025,30.510407755916738,1.7363947491839136,27.107074047516267,33.91374146431721,3507.0,"tract-located events; 3,513 total, 1428 tracts",2020-01..2026-05
+program_year_yield,raw_1X,2026,20.338983050847457,1.321078047158091,17.749670078417598,22.928296023277316,1239.0,"tract-located events; 1,242 total, 730 tracts",2020-01..2026-05
+lpm_year_effects,program_91,2020,-8.326549072817754,2.448717827033509,-13.130896681268581,-3.522201464366927,5026.0,,2020-01..2026-05
+lpm_year_effects,program_91,2021,-5.883391883236638,2.5035966791376274,-10.795410975494299,-0.9713727909789762,5026.0,,2020-01..2026-05
+lpm_year_effects,program_91,2022,2.650830355265904,2.5022045330215574,-2.2584573672154953,7.560118077747303,5026.0,,2020-01..2026-05
+lpm_year_effects,program_91,2023,8.425478242589842,2.5319925408536106,3.4577468960172943,13.393209589162389,5026.0,,2020-01..2026-05
+lpm_year_effects,program_91,2025,-0.4095932550985743,2.774995032601972,-5.854091841730445,5.034905331533296,5026.0,,2020-01..2026-05
+lpm_year_effects,program_91,2026,15.722451571927566,3.739584193684282,8.385443534830552,23.05945960902458,5026.0,,2020-01..2026-05
+program_year_yield,raw_91,2020,12.121212121212121,1.3584829045789233,9.458585628237431,14.783838614186811,627.0,"tract-located events; 976 total, 311 tracts",2020-01..2026-05
+program_year_yield,raw_91,2021,14.564369310793237,1.2541771112543205,12.10618217273477,17.022556448851706,769.0,"tract-located events; 1,062 total, 383 tracts",2020-01..2026-05
+program_year_yield,raw_91,2022,23.098591549295776,1.4461908326881745,20.264057517226952,25.9331255813646,1065.0,"tract-located events; 1,390 total, 497 tracts",2020-01..2026-05
+program_year_yield,raw_91,2023,28.87323943661972,1.3725545277507263,26.183032562228295,31.563446311011145,1136.0,"tract-located events; 1,390 total, 524 tracts",2020-01..2026-05
+program_year_yield,raw_91,2024,20.44776119402985,2.156356447406213,16.221302557113674,24.67421983094603,670.0,"tract-located events; 773 total, 331 tracts",2020-01..2026-05
+program_year_yield,raw_91,2025,20.0381679389313,1.8853457314858508,16.34289030521903,23.733445572643568,524.0,"tract-located events; 560 total, 304 tracts",2020-01..2026-05
+program_year_yield,raw_91,2026,36.170212765957444,3.1214720480603337,30.05212755175919,42.2882979801557,235.0,"tract-located events; 242 total, 152 tracts",2020-01..2026-05
+lpm_year_effects,program_6X,2020,-2.5097380024952183,1.8148263701835752,-6.070009252780098,1.050533247789661,4397.0,,2020-01..2026-05
+lpm_year_effects,program_6X,2021,1.5939494563220382,2.032305454095985,-2.392965655167769,5.580864567811846,4397.0,,2020-01..2026-05
+lpm_year_effects,program_6X,2022,3.2360406091370506,2.25633154101059,-1.1903620751915907,7.662443293465692,4397.0,,2020-01..2026-05
+lpm_year_effects,program_6X,2023,-7.199062635700706,1.6417703499568208,-10.419837841832496,-3.978287429568915,4397.0,,2020-01..2026-05
+lpm_year_effects,program_6X,2025,-1.5386375024509311,2.7126239764223192,-6.860180827343729,3.782905822441867,4397.0,,2020-01..2026-05
+lpm_year_effects,program_6X,2026,-2.6374533667665627,2.510636532823879,-7.562743859886081,2.2878371263529553,4397.0,,2020-01..2026-05
+program_year_yield,raw_6X,2020,6.75422138836773,0.9604208799267981,4.871796463711206,8.636646313024254,1066.0,"tract-located events; 1,155 total, 552 tracts",2020-01..2026-05
+program_year_yield,raw_6X,2021,10.857908847184987,1.4545818533272694,8.00692841466354,13.708889279706435,746.0,"tract-located events; 793 total, 405 tracts",2020-01..2026-05
+program_year_yield,raw_6X,2022,12.5,1.6298747556152033,9.305445478994201,15.694554521005799,720.0,"tract-located events; 794 total, 408 tracts",2020-01..2026-05
+program_year_yield,raw_6X,2023,2.0648967551622417,0.6198775766689562,0.8499367048910877,3.2798568054333956,678.0,"tract-located events; 721 total, 318 tracts",2020-01..2026-05
+program_year_yield,raw_6X,2024,9.263959390862944,1.520062515516223,6.284636860451147,12.24328192127474,788.0,"tract-located events; 830 total, 352 tracts",2020-01..2026-05
+program_year_yield,raw_6X,2025,7.725321888412017,2.269861314355166,3.2763937122758913,12.174250064548144,233.0,"tract-located events; 233 total, 135 tracts",2020-01..2026-05
+program_year_yield,raw_6X,2026,6.626506024096385,2.010348020929348,2.6862239030748634,10.566788145117908,166.0,"tract-located events; 167 total, 86 tracts",2020-01..2026-05
+risk_scores,model,auc,0.8798621050106873,,,,766928.0,in-sample rank AUC of the imported becker pre-2020 logit,2020-01..2026-05
+risk_scores,model,n_params,33.0,,,,,,2020-01..2026-05
+risk_scores,match,2020H1,64.4088116289525,,,,6673.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2020H1,55.913005217583,0.9973712170636158,53.95815763213831,57.86785280302769,4298.0,"visited panel lots, event-weighted; CI clustered on panel tract (1460 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2020H1,81.28476197876908,0.5752085812355371,80.15735315954743,82.41217079799074,4298.0,"visited panel lots, event-weighted; CI clustered on panel tract (1460 tracts)",2020-01..2026-05
+risk_scores,match,2020H2,69.89668127739512,,,,6388.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2020H2,55.82558471828463,1.0040144488466682,53.857716398545165,57.7934530380241,4465.0,"visited panel lots, event-weighted; CI clustered on panel tract (1423 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2020H2,80.74151789981018,0.5862526191963608,79.5924627661853,81.89057303343505,4465.0,"visited panel lots, event-weighted; CI clustered on panel tract (1423 tracts)",2020-01..2026-05
+risk_scores,match,2021H1,69.11332277765212,,,,8842.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2021H1,58.40166800701576,0.9474036724113365,56.54475680908954,60.258579204941974,6111.0,"visited panel lots, event-weighted; CI clustered on panel tract (1583 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2021H1,81.84271113435716,0.5838777367226174,80.69831077038083,82.98711149833349,6111.0,"visited panel lots, event-weighted; CI clustered on panel tract (1583 tracts)",2020-01..2026-05
+risk_scores,match,2021H2,69.96847720659554,,,,8248.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2021H2,49.36164883020204,1.1427003338323076,47.12195617589072,51.60134148451336,5771.0,"visited panel lots, event-weighted; CI clustered on panel tract (1538 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2021H2,76.6060418487846,0.6938931797124736,75.24601121654815,77.96607248102104,5771.0,"visited panel lots, event-weighted; CI clustered on panel tract (1538 tracts)",2020-01..2026-05
+risk_scores,match,2022H1,71.02469784550709,,,,9515.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2022H1,50.75114370025844,1.1334259577341328,48.529628823099536,52.97265857741734,6758.0,"visited panel lots, event-weighted; CI clustered on panel tract (1572 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2022H1,76.96679375115731,0.8748888610754889,75.25201158344936,78.68157591886526,6758.0,"visited panel lots, event-weighted; CI clustered on panel tract (1572 tracts)",2020-01..2026-05
+risk_scores,match,2022H2,73.25246097245699,,,,10057.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2022H2,49.7316515006491,1.0381943671577976,47.696790541019816,51.766512460278385,7367.0,"visited panel lots, event-weighted; CI clustered on panel tract (1698 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2022H2,76.30866840889915,0.6838231954207549,74.96837494587447,77.64896187192383,7367.0,"visited panel lots, event-weighted; CI clustered on panel tract (1698 tracts)",2020-01..2026-05
+risk_scores,match,2023H1,74.3407609224482,,,,10277.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2023H1,51.65552252921573,0.991467020887495,49.71224716827624,53.59879789015522,7640.0,"visited panel lots, event-weighted; CI clustered on panel tract (1714 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2023H1,77.64597177692292,0.6314277071128577,76.40837347098172,78.88357008286413,7640.0,"visited panel lots, event-weighted; CI clustered on panel tract (1714 tracts)",2020-01..2026-05
+risk_scores,match,2023H2,73.81322957198444,,,,7710.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2023H2,60.500899896614136,0.9967207787683297,58.54732717022821,62.454472623000065,5691.0,"visited panel lots, event-weighted; CI clustered on panel tract (1565 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2023H2,81.51496455089308,0.6315976759576342,80.27703310601612,82.75289599577005,5691.0,"visited panel lots, event-weighted; CI clustered on panel tract (1565 tracts)",2020-01..2026-05
+risk_scores,match,2024H1,75.29203539823008,,,,8475.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2024H1,55.716355071436716,1.113791673625005,53.53332339113171,57.89938675174172,6381.0,"visited panel lots, event-weighted; CI clustered on panel tract (1667 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2024H1,78.73065584875363,0.6787035716542638,77.40039684831127,80.06091484919598,6381.0,"visited panel lots, event-weighted; CI clustered on panel tract (1667 tracts)",2020-01..2026-05
+risk_scores,match,2024H2,75.3302392002856,,,,5602.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2024H2,56.78730660257495,1.5255364704219245,53.79725512054798,59.77735808460192,4220.0,"visited panel lots, event-weighted; CI clustered on panel tract (1400 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2024H2,78.75954775514558,0.8858915896826752,77.02320023936753,80.49589527092363,4220.0,"visited panel lots, event-weighted; CI clustered on panel tract (1400 tracts)",2020-01..2026-05
+risk_scores,match,2025H1,72.62332571055211,,,,6122.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2025H1,55.124238359837754,1.0070256064163838,53.15046817126164,57.098008548413866,4446.0,"visited panel lots, event-weighted; CI clustered on panel tract (1444 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2025H1,79.29113766022597,0.6368498212094748,78.0429120106554,80.53936330979654,4446.0,"visited panel lots, event-weighted; CI clustered on panel tract (1444 tracts)",2020-01..2026-05
+risk_scores,match,2025H2,72.43589743589743,,,,6552.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2025H2,54.250472244406005,1.0920368955173356,52.110079929192025,56.390864559619985,4746.0,"visited panel lots, event-weighted; CI clustered on panel tract (1499 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2025H2,77.99150713724943,0.7295588986846443,76.56157169582752,79.42144257867133,4746.0,"visited panel lots, event-weighted; CI clustered on panel tract (1499 tracts)",2020-01..2026-05
+risk_scores,match,2026H1,61.667631731326,,,,5181.0,share of visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,mean_p100,2026H1,53.7293319227705,1.143586678084472,51.487902033724936,55.97076181181606,3195.0,"visited panel lots, event-weighted; CI clustered on panel tract (1217 tracts)",2020-01..2026-05
+risk_scores,mean_risk_pctile,2026H1,78.34022092228567,0.7401246814533626,76.88957654663707,79.79086529793426,3195.0,"visited panel lots, event-weighted; CI clustered on panel tract (1217 tracts)",2020-01..2026-05
+risk_scores,mean_p100_8A,2020,60.850233067526645,,,,2494.0,,2020-01..2026-05
+risk_scores,mean_p100_8A,2021,54.98781381412797,,,,3314.0,,2020-01..2026-05
+risk_scores,mean_p100_8A,2022,51.35197220661204,,,,3062.0,,2020-01..2026-05
+risk_scores,mean_p100_8A,2023,62.00566887044686,,,,2171.0,,2020-01..2026-05
+risk_scores,mean_p100_8A,2024,72.40727224388904,,,,2012.0,,2020-01..2026-05
+risk_scores,mean_p100_8A,2025,64.71195246995471,,,,2564.0,,2020-01..2026-05
+risk_scores,mean_p100_8A,2026,59.27733747638736,,,,1079.0,,2020-01..2026-05
+risk_scores,mean_p100_7G,2020,55.737379892184705,,,,697.0,,2020-01..2026-05
+risk_scores,mean_p100_7G,2021,57.70350902681446,,,,3749.0,,2020-01..2026-05
+risk_scores,mean_p100_7G,2022,54.733458143110866,,,,5321.0,,2020-01..2026-05
+risk_scores,mean_p100_7G,2023,53.383276035612546,,,,3972.0,,2020-01..2026-05
+risk_scores,mean_p100_7G,2024,52.31620033725189,,,,2532.0,,2020-01..2026-05
+risk_scores,mean_p100_7G,2025,48.83862400809846,,,,1451.0,,2020-01..2026-05
+risk_scores,mean_p100_7G,2026,56.405697189886986,,,,503.0,,2020-01..2026-05
+risk_scores,mean_p100_1X,2020,47.748956238763796,,,,2798.0,,2020-01..2026-05
+risk_scores,mean_p100_1X,2021,41.482808221521715,,,,2595.0,,2020-01..2026-05
+risk_scores,mean_p100_1X,2022,39.71157132918779,,,,3409.0,,2020-01..2026-05
+risk_scores,mean_p100_1X,2023,43.25896846540032,,,,2548.0,,2020-01..2026-05
+risk_scores,mean_p100_1X,2024,46.30211125263414,,,,2451.0,,2020-01..2026-05
+risk_scores,mean_p100_1X,2025,43.044924981855196,,,,2962.0,,2020-01..2026-05
+risk_scores,mean_p100_1X,2026,40.97275405124535,,,,952.0,,2020-01..2026-05
+risk_scores,mean_p100_91,2020,82.10090902363568,,,,319.0,,2020-01..2026-05
+risk_scores,mean_p100_91,2021,80.12941924361776,,,,436.0,,2020-01..2026-05
+risk_scores,mean_p100_91,2022,77.91789968042998,,,,682.0,,2020-01..2026-05
+risk_scores,mean_p100_91,2023,79.62796863850457,,,,773.0,,2020-01..2026-05
+risk_scores,mean_p100_91,2024,83.41936302849196,,,,471.0,,2020-01..2026-05
+risk_scores,mean_p100_91,2025,81.53025482084941,,,,331.0,,2020-01..2026-05
+risk_scores,mean_p100_91,2026,75.82566097395107,,,,86.0,,2020-01..2026-05
+risk_scores,mean_p100_6X,2020,52.63912059593857,,,,841.0,,2020-01..2026-05
+risk_scores,mean_p100_6X,2021,59.455054165333365,,,,613.0,,2020-01..2026-05
+risk_scores,mean_p100_6X,2022,47.60535037932861,,,,543.0,,2020-01..2026-05
+risk_scores,mean_p100_6X,2023,47.53085799181036,,,,476.0,,2020-01..2026-05
+risk_scores,mean_p100_6X,2024,51.16953299541725,,,,625.0,,2020-01..2026-05
+risk_scores,mean_p100_6X,2025,54.291859461673965,,,,179.0,,2020-01..2026-05
+risk_scores,mean_p100_6X,2026,51.93596920400121,,,,113.0,,2020-01..2026-05
+cold_share,cold_share,2020,45.693285353342006,,,,13061.0,"share with no DOB complaint at the BBL in the prior 730 days (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05
+cold_share,cold_yield,2020,34.95308310991957,,,,5968.0,"violation yield (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05
+cold_share,warm_yield,2020,31.80600592133089,,,,7093.0,"violation yield (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05
+cold_share,cold_share,2021,17.349327091866584,,,,17090.0,"share with no DOB complaint at the BBL in the prior 730 days (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05
+cold_share,cold_yield,2021,33.15345699831366,,,,2965.0,"violation yield (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05
+cold_share,warm_yield,2021,27.447787610619468,,,,14125.0,"violation yield (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05
+cold_share,cold_share,2022,18.91477621091355,,,,19572.0,share with no DOB complaint at the BBL in the prior 730 days (pp),2020-01..2026-05
+cold_share,cold_yield,2022,31.280388978930308,,,,3702.0,violation yield (pp),2020-01..2026-05
+cold_share,warm_yield,2022,26.81159420289855,,,,15870.0,violation yield (pp),2020-01..2026-05
+cold_share,cold_share,2023,20.542614110190694,,,,17987.0,share with no DOB complaint at the BBL in the prior 730 days (pp),2020-01..2026-05
+cold_share,cold_yield,2023,37.4830852503383,,,,3695.0,violation yield (pp),2020-01..2026-05
+cold_share,warm_yield,2023,29.54799888049258,,,,14292.0,violation yield (pp),2020-01..2026-05
+cold_share,cold_share,2024,17.780777154223205,,,,14077.0,share with no DOB complaint at the BBL in the prior 730 days (pp),2020-01..2026-05
+cold_share,cold_yield,2024,35.55733120255693,,,,2503.0,violation yield (pp),2020-01..2026-05
+cold_share,warm_yield,2024,29.64402972179022,,,,11574.0,violation yield (pp),2020-01..2026-05
+cold_share,cold_share,2025,18.991636421019408,,,,12674.0,share with no DOB complaint at the BBL in the prior 730 days (pp),2020-01..2026-05
+cold_share,cold_yield,2025,48.857498961362694,,,,2407.0,violation yield (pp),2020-01..2026-05
+cold_share,warm_yield,2025,39.81688906204344,,,,10267.0,violation yield (pp),2020-01..2026-05
+cold_share,cold_share,2026,15.981470758540828,,,,5181.0,share with no DOB complaint at the BBL in the prior 730 days (pp),2020-01..2026-05
+cold_share,cold_yield,2026,50.966183574879224,,,,828.0,violation yield (pp),2020-01..2026-05
+cold_share,warm_yield,2026,42.45348035837353,,,,4353.0,violation yield (pp),2020-01..2026-05
