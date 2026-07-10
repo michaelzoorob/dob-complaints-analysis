@@ -1,40 +1,66 @@
 block,model,term,estimate,std_error,25pct,975pct,n,note,window
 yearly_yield,raw,yield_2020,33.24400888140265,0.5203532721390453,32.22411646801012,34.263901294795176,13061.0,"violation yield (pp), all events; CI tract-clustered on the 11,345 tract-located events (1964 tracts)",2020-01..2026-05
-yearly_yield,outcome_shares,pending_share_2020,0.0,,,,13061.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,no_access_share_2020,4.693361917157951,,,,13061.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,other_share_2020,0.2067223030395835,,,,13061.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,referral_share_2020,1.240333818237501,,,,13061.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2020,0.0,,,,13061.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2020,4.693361917157951,,,,13061.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2020,0.2067223030395835,,,,13061.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2020,1.240333818237501,,,,13061.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,censoring_guard,empty_dispo_share_2020,0.022969144782175942,,,,13061.0,"share with an EMPTY open_data disposition_code (pp): the real unresolved bucket (open_data bulk vintage 2026-04-04); censoring deflates recent yield, see backfilled_bis rows",2020-01..2026-05
 yearly_yield,raw,yield_2021,28.437682855471035,0.4445065743880734,27.566449969670412,29.308915741271658,17090.0,"violation yield (pp), all events; CI tract-clustered on the 15,100 tract-located events (1997 tracts)",2020-01..2026-05
-yearly_yield,outcome_shares,pending_share_2021,0.0,,,,17090.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,no_access_share_2021,2.305441778818022,,,,17090.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,other_share_2021,0.12873025160912815,,,,17090.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,referral_share_2021,0.8894090111176126,,,,17090.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2021,0.0,,,,17090.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2021,2.305441778818022,,,,17090.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2021,0.12873025160912815,,,,17090.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2021,0.8894090111176126,,,,17090.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,censoring_guard,empty_dispo_share_2021,0.0,,,,17090.0,"share with an EMPTY open_data disposition_code (pp): the real unresolved bucket (open_data bulk vintage 2026-04-04); censoring deflates recent yield, see backfilled_bis rows",2020-01..2026-05
 yearly_yield,raw,yield_2022,27.656856734109954,0.4627021602730657,26.749960499974744,28.563752968245165,19572.0,"violation yield (pp), all events; CI tract-clustered on the 17,721 tract-located events (2064 tracts)",2020-01..2026-05
-yearly_yield,outcome_shares,pending_share_2022,0.0,,,,19572.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,no_access_share_2022,2.432045779685265,,,,19572.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,other_share_2022,0.5824647455548744,,,,19572.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,referral_share_2022,1.7269568771714694,,,,19572.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2022,0.0,,,,19572.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2022,2.432045779685265,,,,19572.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2022,0.5824647455548744,,,,19572.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2022,1.7269568771714694,,,,19572.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,censoring_guard,empty_dispo_share_2022,0.005109339873288371,,,,19572.0,"share with an EMPTY open_data disposition_code (pp): the real unresolved bucket (open_data bulk vintage 2026-04-04); censoring deflates recent yield, see backfilled_bis rows",2020-01..2026-05
 yearly_yield,raw,yield_2023,31.178073052760325,0.5444022435459551,30.111044655410254,32.2451014501104,17987.0,"violation yield (pp), all events; CI tract-clustered on the 16,789 tract-located events (2059 tracts)",2020-01..2026-05
-yearly_yield,outcome_shares,pending_share_2023,0.0,,,,17987.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,no_access_share_2023,1.856896647578807,,,,17987.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,other_share_2023,0.3558125312725857,,,,17987.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,referral_share_2023,1.0729971646188914,,,,17987.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2023,0.0,,,,17987.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2023,1.856896647578807,,,,17987.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2023,0.3558125312725857,,,,17987.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2023,1.0729971646188914,,,,17987.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,censoring_guard,empty_dispo_share_2023,0.016678712403402456,,,,17987.0,"share with an EMPTY open_data disposition_code (pp): the real unresolved bucket (open_data bulk vintage 2026-04-04); censoring deflates recent yield, see backfilled_bis rows",2020-01..2026-05
 yearly_yield,raw,yield_2024,30.69546068054273,0.5413212211814004,29.634471087027187,31.756450274058274,14077.0,"violation yield (pp), all events; CI tract-clustered on the 13,431 tract-located events (2018 tracts)",2020-01..2026-05
-yearly_yield,outcome_shares,pending_share_2024,0.0,,,,14077.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,no_access_share_2024,1.2005398877601763,,,,14077.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,other_share_2024,0.2912552390424096,,,,14077.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,referral_share_2024,1.1721247424877461,,,,14077.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2024,0.0,,,,14077.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2024,1.2005398877601763,,,,14077.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2024,0.2912552390424096,,,,14077.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2024,1.1721247424877461,,,,14077.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,censoring_guard,empty_dispo_share_2024,0.028415145272430206,,,,14077.0,"share with an EMPTY open_data disposition_code (pp): the real unresolved bucket (open_data bulk vintage 2026-04-04); censoring deflates recent yield, see backfilled_bis rows",2020-01..2026-05
 yearly_yield,raw,yield_2025,41.53384882436484,0.6815678488887883,40.19797584054281,42.86972180818687,12674.0,"violation yield (pp), all events; CI tract-clustered on the 12,406 tract-located events (2003 tracts)",2020-01..2026-05
-yearly_yield,outcome_shares,pending_share_2025,0.023670506548840148,,,,12674.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,no_access_share_2025,1.0099416127505128,,,,12674.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,other_share_2025,1.6017042764715166,,,,12674.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,referral_share_2025,0.9310399242543791,,,,12674.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2025,0.023670506548840148,,,,12674.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2025,1.0099416127505128,,,,12674.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2025,1.6017042764715166,,,,12674.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2025,0.9310399242543791,,,,12674.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,censoring_guard,empty_dispo_share_2025,1.1046236389458735,,,,12674.0,"share with an EMPTY open_data disposition_code (pp): the real unresolved bucket (open_data bulk vintage 2026-04-04); censoring deflates recent yield, see backfilled_bis rows",2020-01..2026-05
 yearly_yield,raw,yield_2026,43.813935533680755,0.8571003114681057,42.13401892320327,45.49385214415824,5181.0,"violation yield (pp), all events; CI tract-clustered on the 5,114 tract-located events (1477 tracts)",2020-01..2026-05
-yearly_yield,outcome_shares,pending_share_2026,0.0,,,,5181.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,no_access_share_2026,0.9843659525188188,,,,5181.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,other_share_2026,5.134143987647173,,,,5181.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
-yearly_yield,outcome_shares,referral_share_2026,0.5597375024126616,,,,5181.0,share of events (pp); guard against resolution artifacts,2020-01..2026-05
+yearly_yield,outcome_shares,pending_share_2026,0.0,,,,5181.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,no_access_share_2026,0.9843659525188188,,,,5181.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,other_share_2026,5.134143987647173,,,,5181.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,outcome_shares,referral_share_2026,0.5597375024126616,,,,5181.0,"share of events (pp); NB 'pending' is NOT the unresolved bucket, see censoring_guard",2020-01..2026-05
+yearly_yield,censoring_guard,empty_dispo_share_2026,4.169079328314997,,,,5181.0,"share with an EMPTY open_data disposition_code (pp): the real unresolved bucket (open_data bulk vintage 2026-04-04); censoring deflates recent yield, see backfilled_bis rows",2020-01..2026-05
 yearly_yield,raw,yield_2024_janmay,27.769551756629426,,,,7429.0,2024 Jan-May only; seasonal anchor for the 2026 comparison,2020-01..2026-05
+yearly_yield,backfill_accounting,n_backfilled,181.0,,,,367.0,censored events re-scored from bis_scrape.disposition (scraped through 2026-07); n = all empty-disposition events,2020-01..2026-05
+yearly_yield,backfilled_bis,yield_2024,30.69546068054273,,,,14077.0,"violation yield (pp) after backfilling empty dispositions from the scraped bis_scrape.disposition; censoring only deflates, so this is the honest recent read",2020-01..2026-05
+yearly_yield,backfilled_bis,yield_2025,41.53384882436484,,,,12674.0,"violation yield (pp) after backfilling empty dispositions from the scraped bis_scrape.disposition; censoring only deflates, so this is the honest recent read",2020-01..2026-05
+yearly_yield,backfilled_bis,yield_2026,45.33873769542559,,,,5181.0,"violation yield (pp) after backfilling empty dispositions from the scraped bis_scrape.disposition; censoring only deflates, so this is the honest recent read",2020-01..2026-05
+yearly_yield,monthly_2026_raw,2026-01,41.09470026064292,,,,1151.0,open_data dispositions as published,2020-01..2026-05
+yearly_yield,monthly_2026_backfilled,2026-01,41.61598609904431,,,,1151.0,backfilled; no fade into May = the turn is not a resolution-lag artifact,2020-01..2026-05
+yearly_yield,monthly_2026_empty_share,2026-01,0.9556907037358819,,,,1151.0,share with empty open_data disposition (pp),2020-01..2026-05
+yearly_yield,monthly_2026_raw,2026-02,49.22779922779923,,,,1036.0,open_data dispositions as published,2020-01..2026-05
+yearly_yield,monthly_2026_backfilled,2026-02,49.51737451737452,,,,1036.0,backfilled; no fade into May = the turn is not a resolution-lag artifact,2020-01..2026-05
+yearly_yield,monthly_2026_empty_share,2026-02,1.2548262548262548,,,,1036.0,share with empty open_data disposition (pp),2020-01..2026-05
+yearly_yield,monthly_2026_raw,2026-03,43.90243902439025,,,,1107.0,open_data dispositions as published,2020-01..2026-05
+yearly_yield,monthly_2026_backfilled,2026-03,46.522131887985545,,,,1107.0,backfilled; no fade into May = the turn is not a resolution-lag artifact,2020-01..2026-05
+yearly_yield,monthly_2026_empty_share,2026-03,5.420054200542006,,,,1107.0,share with empty open_data disposition (pp),2020-01..2026-05
+yearly_yield,monthly_2026_raw,2026-04,39.863547758284604,,,,1026.0,open_data dispositions as published,2020-01..2026-05
+yearly_yield,monthly_2026_backfilled,2026-04,41.91033138401559,,,,1026.0,backfilled; no fade into May = the turn is not a resolution-lag artifact,2020-01..2026-05
+yearly_yield,monthly_2026_empty_share,2026-04,9.064327485380117,,,,1026.0,share with empty open_data disposition (pp),2020-01..2026-05
+yearly_yield,monthly_2026_raw,2026-05,45.52845528455285,,,,861.0,open_data dispositions as published,2020-01..2026-05
+yearly_yield,monthly_2026_backfilled,2026-05,47.851335656213706,,,,861.0,backfilled; no fade into May = the turn is not a resolution-lag artifact,2020-01..2026-05
+yearly_yield,monthly_2026_empty_share,2026-05,4.529616724738676,,,,861.0,share with empty open_data disposition (pp),2020-01..2026-05
 decomposition,symmetric,2024_to_2025__total_change_pp,10.838388143822108,,,,12674.0,"yield 30.70 -> 41.53 pp; n base 14,077",2020-01..2026-05
 decomposition,symmetric,2024_to_2025__within_total_pp,4.861684275574473,,,,,sum of avg-weight x yield-change terms over prefixes,2020-01..2026-05
 decomposition,symmetric,2024_to_2025__composition_total_pp,5.976703868247639,,,,,sum of weight-change x (avg yield - overall) terms,2020-01..2026-05
@@ -245,6 +271,27 @@ risk_scores,mean_p100_6X,2023,47.53085799181036,,,,476.0,,2020-01..2026-05
 risk_scores,mean_p100_6X,2024,51.16953299541725,,,,625.0,,2020-01..2026-05
 risk_scores,mean_p100_6X,2025,54.291859461673965,,,,179.0,,2020-01..2026-05
 risk_scores,mean_p100_6X,2026,51.93596920400121,,,,113.0,,2020-01..2026-05
+risk_scores,match_8A,2020H1,51.83009489380931,,,,2213.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2020H2,65.57935735150924,,,,2054.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2021H1,64.54114605773373,,,,2321.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2021H2,65.39431040691393,,,,2777.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2022H1,67.52941176470588,,,,2550.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2022H2,66.36948984645863,,,,2019.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2023H1,66.97916666666667,,,,1920.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2023H2,66.09410007468259,,,,1339.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2024H1,68.08650065530799,,,,1526.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2024H2,68.4729064039409,,,,1421.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2025H1,65.87942821628342,,,,1609.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2025H2,67.4439461883408,,,,2230.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A,2026H1,55.24833589349718,,,,1953.0,share of 8A visits matched to a scored panel lot (pp),2020-01..2026-05
+risk_scores,match_8A_year,2020,58.448558706351065,,,,4267.0,yearly 8A panel match rate (pp),2020-01..2026-05
+risk_scores,match_8A_year,2021,65.00588466065123,,,,5098.0,yearly 8A panel match rate (pp),2020-01..2026-05
+risk_scores,match_8A_year,2022,67.01685270299846,,,,4569.0,yearly 8A panel match rate (pp),2020-01..2026-05
+risk_scores,match_8A_year,2023,66.61552623504143,,,,3259.0,yearly 8A panel match rate (pp),2020-01..2026-05
+risk_scores,match_8A_year,2024,68.2728198167628,,,,2947.0,yearly 8A panel match rate (pp),2020-01..2026-05
+risk_scores,match_8A_year,2025,66.78822610054702,,,,3839.0,yearly 8A panel match rate (pp),2020-01..2026-05
+risk_scores,match_8A_year,2026,55.24833589349718,,,,1953.0,yearly 8A panel match rate (pp),2020-01..2026-05
+risk_scores,scope,matched_panel_scope,61.667631731326,,,,1986.0,"mean_p100 is identified only for visits matched to the pre-2020 residential panel; match fell 75.3% (2024H2) -> 61.7% (2026H1), within-8A 68.3% -> 55.2% (2024 -> 2026); unmatched 2026H1 visits (n = this row's n) are 79% at active permits with a 46% violation yield vs 42% among matched -- unscoreable construction/commercial stock, not demonstrably low-risk; the flat/declining score series is scoped to panel-scoreable residential lots",2020-01..2026-05
 cold_share,cold_share,2020,45.693285353342006,,,,13061.0,"share with no DOB complaint at the BBL in the prior 730 days (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05
 cold_share,cold_yield,2020,34.95308310991957,,,,5968.0,"violation yield (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05
 cold_share,warm_yield,2020,31.80600592133089,,,,7093.0,"violation yield (pp); lookback truncated (spine starts 2020-01), cold overstated",2020-01..2026-05

@@ -3,36 +3,47 @@
 Hypothesis #1 (proactive_enforcement_plan.md): monitoring per permit.
 
 Does DOB's discretionary construction oversight scale with project size,
-and do office-to-residential conversions draw more (or less) of it than
-otherwise-similar alterations?
+and do non-residential-to-residential conversions draw more (or less) of
+it than otherwise-similar alterations?
 
-Unit: DOB NOW job first permitted 2020+ with a valid active span
-(data/analysis/proactive/jobs.csv.gz, built by proactive_spine.py), span
-clipped to the event window 2020-01..2026-05.
+Unit: DOB NOW BASE PROJECT first permitted 2020+ with a valid active span
+(data/analysis/proactive/jobs.csv.gz, filings collapsed on the
+-I1/-S2/... suffix by proactive_spine.py per Critic B: union active span,
+any-filing conversion flags, max cost/floor), span clipped to the event
+window 2020-01..2026-05.
 
-Outcome: count of agency-originated complaint events (empty ref_311) in
-the discretionary construction families — discretionary_field (8A
-compliance, 7G sweeps, 1X EWO, 91 worker endangerment, ...) plus followup
-(7R, 4G, ...) — assigned to the job. statutory_periodic (7K/7F/6V boiler,
-facade, tenant-protection cycles, ...) is run separately as a contrast:
-cyclical volume should not respond to job traits the way discretionary
-targeting does.
+Outcomes, all counts of complaint events assigned to the project:
+  n_disc            agency-originated (empty ref_311) discretionary
+                    construction families — discretionary_field (8A
+                    compliance, 7G sweeps, 1X EWO, 91 worker
+                    endangerment, ...) plus followup (7R, 4G, ...)
+  n_stat            agency-originated statutory_periodic (7K/7F/6V
+                    cycles, ...): calendar-driven contrast
+  n_caller_incident CALLER PLACEBO (Critic B #4): caller-originated
+                    mixed_incident complaints (cat 30/10/12/...) under
+                    the identical assignment and spec. The discretionary
+                    conversion IRR replicates in this placebo, so the
+                    conversion margin reads as exposure/salience of the
+                    site, not an agency allocation choice — do not quote
+                    it as "targeting".
+  n_caller_all      caller placebo, all caller complaints
 
-Event -> job assignment (one job per event, no double counting):
-  1. direct: the event's active-permit job_filing_number (largest-cost
-     permit active at the received date, from the spine) matches a spine
-     job and the received date falls inside that job's clipped span;
-  2. fallback: BBL match with received date inside the clipped span,
-     ties resolved to the largest initial_cost (spine convention).
+Event -> project assignment (one project per event, no double counting):
+  1. direct: the event's active_job_key (largest-cost permit active at
+     the received date, filing suffix stripped) matches a spine project
+     and the received date falls inside that project's clipped span;
+  2. fallback: BBL match (valid BBLs only) with received date inside the
+     clipped span, ties resolved to the largest initial_cost.
 
 Model: PPML with a log(active months) offset,
   y ~ conversion_flag + log(initial_cost+1) + log(floor_area+1)
       + floor_missing + job-type dummies | nta^first_permit_quarter,
   SEs clustered on BBL (treatment varies at the lot). Conversion flags
-  reported for all three spine definitions: relaxed (Alt-CO family,
-  0 existing units, >0 proposed; n=1,337), strict (proposed>=10; n=630),
-  office-class (relaxed + PLUTO class O/K; n=412). NTA comes from the
-  modal events-file tract->NTA crosswalk.
+  are the spine definitions any-flagged at the base-project level;
+  labels follow Critic B #5 (only ~27% of strict-flag projects are PLUTO
+  office class, so they are "non-residential-to-residential", not
+  "office-to-residential"). NTA comes from the modal events-file
+  tract->NTA crosswalk.
 
 Outputs
   data/analysis/risk_models/proactive_monitoring_estimates.csv
@@ -65,11 +76,26 @@ DAYS_PER_MONTH = 30.4375
 
 DISC_FAMILIES = ("discretionary_field", "followup")
 STAT_FAMILY = "statutory_periodic"
+PLACEBO_FAMILY = "mixed_incident"
 
+# Critic B #5: only ~27% of strict-flag projects are PLUTO office class,
+# so the flags are "non-residential-to-residential", never "office-to-
+# residential". Flags are any-filing at the base-project level.
 CONV_DEFS = {
-    "conversion": "relaxed (Alt-CO, 0 existing units, >0 proposed)",
-    "conversion_ge10": "strict (relaxed + proposed>=10 units)",
-    "conversion_office": "office-class (relaxed + PLUTO class O/K)",
+    "conversion": ("non-residential-to-residential conversion, any size "
+                   "(Alt-CO family, 0 existing units, >0 proposed)"),
+    "conversion_ge10": ("non-residential-to-residential conversion "
+                        "(10+ units)"),
+    "conversion_office": ("office/store-class conversion "
+                          "(relaxed + PLUTO class O/K)"),
+}
+
+OUTCOMES = {
+    "n_disc": "discretionary_field+followup (agency)",
+    "n_stat": "statutory_periodic (agency contrast)",
+    "n_caller_incident": ("caller placebo: construction-incident "
+                          "complaints (mixed_incident, agency=0)"),
+    "n_caller_all": "caller placebo: all caller complaints (agency=0)",
 }
 
 JOB_TYPE_DUMMIES = {
@@ -123,7 +149,7 @@ def money(v: float) -> str:
 def load_jobs() -> pd.DataFrame:
     jobs = pd.read_csv(
         SPINE / "jobs.csv.gz",
-        usecols=["job_filing_number", "job_type", "initial_cost",
+        usecols=["job_key", "n_filings", "job_type", "initial_cost",
                  "total_construction_floor_area", "bbl", "bct2020",
                  "first_permit_date", "active_start", "active_end",
                  "conversion", "conversion_ge10", "conversion_office"],
@@ -137,9 +163,9 @@ def load_jobs() -> pd.DataFrame:
     jobs = jobs[jobs["span_end"] >= jobs["span_start"]].reset_index(drop=True)
     jobs["months"] = ((jobs["span_end"] - jobs["span_start"]).dt.days + 1) / DAYS_PER_MONTH
 
-    print(f"Jobs: {n0:,} in spine -> {len(jobs):,} with a valid active span "
-          f"inside {WINDOW_START:%Y-%m}..{WINDOW_END:%Y-%m} "
-          f"({jobs['months'].sum():,.0f} job-months, median span "
+    print(f"Projects: {n0:,} base projects in spine -> {len(jobs):,} with a "
+          f"valid active span inside {WINDOW_START:%Y-%m}..{WINDOW_END:%Y-%m} "
+          f"({jobs['months'].sum():,.0f} project-months, median span "
           f"{jobs['months'].median():.1f} mo)")
     return jobs
 
@@ -148,14 +174,16 @@ def load_events() -> pd.DataFrame:
     ev = pd.read_csv(
         SPINE / "proactive_events.csv.gz",
         usecols=["received_date", "family", "agency", "bbl", "bct2020",
-                 "nta", "active_job_filing_number"],
+                 "nta", "active_job_key"],
         dtype={"bbl": "str", "bct2020": "str", "nta": "str",
-               "active_job_filing_number": "str"},
+               "active_job_key": "str"},
         parse_dates=["received_date"], low_memory=False)
-    ev = ev[ev["agency"] == 1]
-    print(f"Events: {len(ev):,} agency-originated 2020-01..2026-05; "
-          f"disc {ev['family'].isin(DISC_FAMILIES).sum():,}, "
-          f"stat {(ev['family'] == STAT_FAMILY).sum():,}")
+    ag, ca = ev[ev["agency"] == 1], ev[ev["agency"] == 0]
+    print(f"Events 2020-01..2026-05: {len(ag):,} agency "
+          f"(disc {ag['family'].isin(DISC_FAMILIES).sum():,}, "
+          f"stat {(ag['family'] == STAT_FAMILY).sum():,}); "
+          f"{len(ca):,} caller "
+          f"(incident {(ca['family'] == PLACEBO_FAMILY).sum():,})")
     return ev
 
 
@@ -170,36 +198,34 @@ def tract_nta_crosswalk(ev: pd.DataFrame) -> pd.Series:
 
 def assign_events(ev: pd.DataFrame, jobs: pd.DataFrame,
                   label: str) -> pd.Series:
-    """Assign each event to at most one job; return counts per job."""
+    """Assign each event to at most one base project; counts per project."""
     e = ev.reset_index(drop=True)
     e["eid"] = e.index
 
-    span = jobs[["job_filing_number", "bbl", "span_start", "span_end",
-                 "initial_cost"]]
+    span = jobs[["job_key", "bbl", "span_start", "span_end", "initial_cost"]]
 
-    # 1. direct link on the spine's active-permit job filing number
-    d = e.merge(span[["job_filing_number", "span_start", "span_end"]],
-                left_on="active_job_filing_number",
-                right_on="job_filing_number", how="inner")
+    # 1. direct link on the spine's active-permit base key
+    d = e.merge(span[["job_key", "span_start", "span_end"]],
+                left_on="active_job_key", right_on="job_key", how="inner")
     n_link = len(d)
     d = d[d["received_date"].between(d["span_start"], d["span_end"])]
-    d = d[["eid", "job_filing_number"]]
+    d = d[["eid", "job_key"]]
 
-    # 2. fallback: BBL + received date inside the clipped span,
-    #    largest initial_cost wins when several jobs are active
-    rest = e[~e["eid"].isin(d["eid"])].drop(columns=["job_filing_number"],
-                                            errors="ignore")
-    f = rest.merge(span, on="bbl", how="inner")
+    # 2. fallback: BBL + received date inside the clipped span, largest
+    #    initial_cost wins when several projects are active (valid BBLs
+    #    only: pandas matches NaN keys in merges)
+    rest = e[~e["eid"].isin(d["eid"]) & e["bbl"].notna()]
+    f = rest.merge(span[span["bbl"].notna()], on="bbl", how="inner")
     f = f[f["received_date"].between(f["span_start"], f["span_end"])]
     f = (f.sort_values("initial_cost", ascending=False, kind="stable")
-         .drop_duplicates("eid"))[["eid", "job_filing_number"]]
+         .drop_duplicates("eid"))[["eid", "job_key"]]
 
     assigned = pd.concat([d, f], ignore_index=True)
     print(f"  {label}: {len(e):,} events -> {len(assigned):,} assigned "
           f"({len(assigned) / len(e):.1%}); direct {len(d):,} "
           f"(of {n_link:,} in-spine links, {n_link - len(d):,} outside span), "
           f"bbl-span fallback {len(f):,}")
-    return assigned.groupby("job_filing_number").size()
+    return assigned.groupby("job_key").size()
 
 
 def build_model_frame() -> pd.DataFrame:
@@ -207,15 +233,22 @@ def build_model_frame() -> pd.DataFrame:
     ev = load_events()
     xw = tract_nta_crosswalk(ev)
 
-    print("Event -> job assignment:")
-    disc = ev[ev["family"].isin(DISC_FAMILIES)]
-    stat = ev[ev["family"] == STAT_FAMILY]
-    jobs["n_disc"] = (jobs["job_filing_number"]
-                      .map(assign_events(disc, jobs, "discretionary+followup"))
-                      .fillna(0).astype(int))
-    jobs["n_stat"] = (jobs["job_filing_number"]
-                      .map(assign_events(stat, jobs, "statutory contrast"))
-                      .fillna(0).astype(int))
+    print("Event -> project assignment:")
+    agency = ev[ev["agency"] == 1]
+    caller = ev[ev["agency"] == 0]
+    streams = {
+        "n_disc": (agency[agency["family"].isin(DISC_FAMILIES)],
+                   "discretionary+followup"),
+        "n_stat": (agency[agency["family"] == STAT_FAMILY],
+                   "statutory contrast"),
+        "n_caller_incident": (caller[caller["family"] == PLACEBO_FAMILY],
+                              "caller incident placebo"),
+        "n_caller_all": (caller, "caller all placebo"),
+    }
+    for col, (stream, label) in streams.items():
+        jobs[col] = (jobs["job_key"]
+                     .map(assign_events(stream, jobs, label))
+                     .fillna(0).astype(int))
 
     # covariates
     jobs["nta"] = jobs["bct2020"].map(xw)
@@ -229,13 +262,12 @@ def build_model_frame() -> pd.DataFrame:
         jobs[col] = (jobs["job_type"] == val).astype("int8")
 
     mf = jobs[jobs["nta"].notna()].reset_index(drop=True)
-    print(f"\nModel frame: {len(mf):,} jobs with NTA "
-          f"({len(mf) / len(jobs):.1%} of span-valid); "
-          f"disc events kept {mf['n_disc'].sum():,}, "
-          f"stat {mf['n_stat'].sum():,}")
+    print(f"\nModel frame: {len(mf):,} projects with NTA "
+          f"({len(mf) / len(jobs):.1%} of span-valid); events kept "
+          + ", ".join(f"{k} {mf[k].sum():,}" for k in OUTCOMES))
     print("  conversion flags in sample: "
           + ", ".join(f"{k} {int(mf[k].sum()):,}" for k in CONV_DEFS))
-    print(f"  disc rate per 100 job-months: all "
+    print(f"  disc rate per 100 project-months: all "
           f"{100 * mf['n_disc'].sum() / mf['months'].sum():.2f}; conversions "
           f"{100 * mf.loc[mf['conversion'] == 1, 'n_disc'].sum() / mf.loc[mf['conversion'] == 1, 'months'].sum():.2f}")
     return mf
@@ -245,8 +277,7 @@ def build_model_frame() -> pd.DataFrame:
 
 def run_models(mf: pd.DataFrame) -> pd.DataFrame:
     rows = []
-    for outcome, out_label in [("n_disc", "discretionary_field+followup"),
-                               ("n_stat", "statutory_periodic (contrast)")]:
+    for outcome, out_label in OUTCOMES.items():
         for flag, flag_label in CONV_DEFS.items():
             fml = f"{outcome} ~ {flag} + {X_TERMS} | nta^permit_q"
             t0 = time.time()
@@ -271,6 +302,7 @@ def run_models(mf: pd.DataFrame) -> pd.DataFrame:
                     "offset": "log(active months)",
                     "cluster": "bbl",
                     "window": "2020-01..2026-05",
+                    "unit": "base project (Critic B collapse)",
                 })
             key = td[td["Coefficient"] == flag].iloc[0]
             print(f"  {outcome} ~ {flag}: b={key['Estimate']:+.3f} "
@@ -288,7 +320,7 @@ def make_figure(mf: pd.DataFrame) -> pd.DataFrame:
     mf["decile"] = (pd.qcut(mf["initial_cost"].rank(method="first"),
                             10, labels=False) + 1)
     g = mf.groupby("decile").agg(
-        n_jobs=("job_filing_number", "size"),
+        n_jobs=("job_key", "size"),
         job_months=("months", "sum"),
         events=("n_disc", "sum"),
         median_cost=("initial_cost", "median"))
@@ -296,7 +328,7 @@ def make_figure(mf: pd.DataFrame) -> pd.DataFrame:
 
     conv = mf[mf["conversion"] == 1]
     gc = conv.groupby("decile").agg(
-        conv_n_jobs=("job_filing_number", "size"),
+        conv_n_jobs=("job_key", "size"),
         conv_job_months=("months", "sum"),
         conv_events=("n_disc", "sum"))
     gc["conv_rate_per_100"] = 100 * gc["conv_events"] / gc["conv_job_months"]
@@ -307,14 +339,14 @@ def make_figure(mf: pd.DataFrame) -> pd.DataFrame:
 
     fig, ax = plt.subplots(figsize=(12.5, 5.6), dpi=160)
     bars = ax.bar(g["decile"], g["rate_per_100"], width=0.72, color=BLUE,
-                  alpha=0.85, zorder=2, label="all jobs")
+                  alpha=0.85, zorder=2, label="all projects")
 
     show = g["conv_n_jobs"].fillna(0) >= 5
     (marks,) = ax.plot(
         g.loc[show, "decile"], g.loc[show, "conv_rate_per_100"],
         linestyle="none", marker="D", markersize=9, color=RED,
         markeredgecolor="white", markeredgewidth=1.2, zorder=4, clip_on=False,
-        label="office-to-resi conversions (relaxed definition)")
+        label="non-residential-to-residential conversions (any size)")
     halo = [pe.withStroke(linewidth=2.5, foreground=SURFACE)]
     y_top = ax.get_ylim()[1]
     for _, r in g.loc[show].iterrows():
@@ -335,13 +367,13 @@ def make_figure(mf: pd.DataFrame) -> pd.DataFrame:
                         zip(g["decile"], g["median_cost"])], fontsize=9)
     ax.set_xlabel("initial-cost decile (median estimated cost)",
                   fontsize=10.5)
-    ax.set_ylabel("agency inspections per 100 job-months", fontsize=10.5)
+    ax.set_ylabel("agency inspections per 100 project-months", fontsize=10.5)
     ax.set_title("DOB discretionary oversight concentrates on the costliest projects",
                  loc="left", fontsize=15, fontweight="bold", color=INK,
                  pad=30)
     ax.text(0, 1.03,
-            "Agency-initiated discretionary + follow-up complaint events per 100 active job-months, "
-            "DOB NOW jobs first permitted 2020–2026",
+            "Agency-initiated discretionary + follow-up complaint events per 100 active project-months, "
+            "DOB NOW base projects first permitted 2020–2026",
             transform=ax.transAxes, fontsize=10.5, color=MUTED)
     ax.legend(handles=[bars, marks], loc="upper left", frameon=False,
               fontsize=10)
@@ -358,19 +390,32 @@ def make_figure(mf: pd.DataFrame) -> pd.DataFrame:
 
 def print_verdict(est: pd.DataFrame) -> None:
     print("\n== Conversion verdict (PPML, offset log active months, "
-          "FE nta x first-permit quarter, SE clustered on BBL) ==")
+          "FE nta x first-permit quarter, SE clustered on BBL; "
+          "base-project unit) ==")
+    show = [("n_disc", "discretionary "), ("n_stat", "statutory    "),
+            ("n_caller_incident", "CALLER incid."),
+            ("n_caller_all", "CALLER all   ")]
     for flag, flag_label in CONV_DEFS.items():
-        d = est[(est["outcome"] == "n_disc") & (est["conv_def"] == flag)
-                & (est["term"] == flag)].iloc[0]
-        s = est[(est["outcome"] == "n_stat") & (est["conv_def"] == flag)
-                & (est["term"] == flag)].iloc[0]
         print(f"  {flag_label}:")
-        print(f"    discretionary: IRR {d['irr']:.2f} "
-              f"[{d['irr_lo']:.2f}, {d['irr_hi']:.2f}] "
-              f"(b={d['b']:+.3f}, se {d['se']:.3f}, n={d['n_obs']:,})")
-        print(f"    statutory     : IRR {s['irr']:.2f} "
-              f"[{s['irr_lo']:.2f}, {s['irr_hi']:.2f}] "
-              f"(b={s['b']:+.3f}, se {s['se']:.3f}, n={s['n_obs']:,})")
+        for outcome, tag in show:
+            r = est[(est["outcome"] == outcome) & (est["conv_def"] == flag)
+                    & (est["term"] == flag)].iloc[0]
+            print(f"    {tag}: IRR {r['irr']:.2f} "
+                  f"[{r['irr_lo']:.2f}, {r['irr_hi']:.2f}] "
+                  f"(b={r['b']:+.3f}, se {r['se']:.3f}, n={r['n_obs']:,})")
+    d = est[(est["outcome"] == "n_disc")
+            & (est["conv_def"] == "conversion_ge10")
+            & (est["term"] == "conversion_ge10")].iloc[0]
+    c = est[(est["outcome"] == "n_caller_incident")
+            & (est["conv_def"] == "conversion_ge10")
+            & (est["term"] == "conversion_ge10")].iloc[0]
+    print("\n  Critic B #4 reading: the caller-incident placebo IRR "
+          f"({c['irr']:.2f} [{c['irr_lo']:.2f}, {c['irr_hi']:.2f}]) sits "
+          f"beside the discretionary IRR ({d['irr']:.2f} "
+          f"[{d['irr_lo']:.2f}, {d['irr_hi']:.2f}]). Conversions RECEIVE "
+          "more monitoring, and they also draw more caller complaints "
+          "under the identical spec, so the margin reads as site "
+          "exposure/salience, not an agency allocation choice.")
 
 
 def main() -> None:

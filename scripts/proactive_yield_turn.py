@@ -38,23 +38,39 @@ Honest caveats carried in the outputs:
   - 2026 is Jan-May only; the seasonally matched comparison shows 2024
     Jan-May yield (27.8%) was BELOW the 2024 full-year figure, so
     seasonality understates rather than explains the turn;
+  - CENSORING (critic E, Y1): unresolved complaints carry an EMPTY
+    open_data disposition_code, and classify_disposition('') is 'other',
+    NOT 'pending' -- so the pending outcome share is the wrong guard
+    bucket (the empty share is ~4% of 2026 events at the 2026-04-04
+    open_data bulk vintage). Censoring keeps unresolved rows in the
+    denominator with hit=0, so it DEFLATES recent yield. Guard rows now
+    count empty dispositions by year (censoring_guard), and a backfill
+    block re-scores censored events from the fresher scraped
+    bis_scrape.disposition (scraped 2026-04..2026-07): 2026 Jan-May
+    yield moves ~43.8 -> ~45.3, and corrected monthly 2026 yields show
+    no fade through May -- the turn is not a resolution-lag artifact,
+    it is slightly understated;
   - risk scores exist only for lots in the residential risk panel; the
     matched share per half-year is reported so panel-selection drift is
-    visible (7G/8A construction sites often sit on non-residential lots);
+    visible, and it MOVED: ~75% (2024H2) -> ~62% (2026H1), within-8A
+    ~68% -> ~55% (2024 -> 2026). The mean-score series is therefore
+    identified for panel-scoreable residential lots only; unmatched
+    2026H1 visits are mostly at active permits with a high violation
+    yield (construction stock the model cannot score, not demonstrably
+    low-risk stock). Per-program match rows (match_8A) and a
+    matched_panel_scope note row sit next to the series;
   - the risk model's outcome is realized enforcement, not latent risk
     (proactive_becker_margin.py caveats apply); scores are frozen
     pre-2020-features predictions, so cross-period comparisons are
     apples to apples;
   - cold shares before 2022 are overstated (lookback truncated at the
     2020-01 spine edge); rows are flagged, and the 2024-26 turn sits
-    entirely in complete-lookback years;
-  - pending dispositions are ~0 in every year (max 0.02% in 2025), so
-    the turn is not a resolution-lag artifact; outcome-share guard rows
-    are included.
+    entirely in complete-lookback years.
 
 Inputs : data/analysis/proactive/proactive_events.csv.gz
          data/analysis/property_risk_panel_v2.csv.gz (via becker import)
-         data/dob_complaints.db (dob_ledger union, via becker import)
+         data/dob_complaints.db (dob_ledger union, via becker import;
+         bis_scrape dispositions for the censoring backfill)
 Outputs: data/analysis/risk_models/proactive_yield_turn.csv
          data/analysis/blog_posts/artifacts/proactive_yield_turn.png
 
@@ -62,6 +78,7 @@ Run: /private/tmp/pyfix_venv/bin/python scripts/proactive_yield_turn.py
 """
 
 import re
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -75,9 +92,13 @@ import pyfixest as pf
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
+from disposition_codes import classify_disposition
 from proactive_becker_margin import (clean_tidy, cluster_mean,
                                      load_panel_scored, norm_tract)
 from proactive_decomposition import add_warm_flag
+
+# scraped bis_scrape.disposition looks like "MM/DD/YYYY - XX - TEXT"
+BIS_DISPO_RE = re.compile(r"^\s*\d{2}/\d{2}/\d{4}\s*-\s*([A-Z0-9]{2})\s*-")
 
 SPINE = config.DATA_DIR / "analysis" / "proactive" / "proactive_events.csv.gz"
 OUT = config.DATA_DIR / "analysis" / "risk_models"
@@ -125,8 +146,10 @@ def row(block, model, term, estimate, std_error=np.nan, lo=np.nan, hi=np.nan,
 
 def load_disc() -> pd.DataFrame:
     ev = pd.read_csv(SPINE, usecols=[
-        "received_date", "category_prefix", "family", "agency", "bbl",
-        "bct2020", "outcome"], dtype={"bbl": str})
+        "complaint_number", "received_date", "category_prefix", "family",
+        "agency", "bbl", "bct2020", "outcome", "disposition_code",
+        "active_permit"],
+        dtype={"complaint_number": str, "bbl": str, "disposition_code": str})
     ev["received"] = pd.to_datetime(ev["received_date"], format="%Y-%m-%d")
     ev["bbl"] = ev["bbl"].fillna("")
     # 730-day warm/cold flag from proactive_decomposition.py, computed on
@@ -140,9 +163,13 @@ def load_disc() -> pd.DataFrame:
     d["hit100"] = (d["outcome"] == "violation").astype(float) * 100.0
     d["bct"] = norm_tract(d["bct2020"])
     d.loc[d["bct2020"].isna(), "bct"] = np.nan
+    # the REAL unresolved bucket: empty open_data disposition_code
+    # (classify_disposition('') == 'other', not 'pending')
+    d["od_empty"] = d["disposition_code"].fillna("").str.strip() == ""
     print(f"discretionary_field agency events: {len(d):,} "
           f"({d['received_date'].min()}..{d['received_date'].max()}); "
-          f"tract-located {d['bct'].notna().mean():.3f}")
+          f"tract-located {d['bct'].notna().mean():.3f}; "
+          f"empty disposition {d['od_empty'].mean():.4f}")
     return d
 
 
@@ -163,13 +190,77 @@ def yearly_block(d: pd.DataFrame) -> list:
             rows.append(row(
                 "yearly_yield", "outcome_shares", f"{oc}_share_{y}",
                 (sub["outcome"] == oc).mean() * 100, n=len(sub),
-                note="share of events (pp); guard against resolution artifacts"))
+                note="share of events (pp); NB 'pending' is NOT the "
+                     "unresolved bucket, see censoring_guard"))
+        # the honest censoring guard (critic E, Y1a): unresolved
+        # complaints carry an EMPTY disposition_code, which
+        # classify_disposition maps to 'other', not 'pending'
+        rows.append(row(
+            "yearly_yield", "censoring_guard", f"empty_dispo_share_{y}",
+            sub["od_empty"].mean() * 100, n=len(sub),
+            note="share with an EMPTY open_data disposition_code (pp): the "
+                 "real unresolved bucket (open_data bulk vintage 2026-04-04); "
+                 "censoring deflates recent yield, see backfilled_bis rows"))
     # seasonal anchor
     jm24 = d[(d["year"] == "2024") & (d["mm"] <= 5)]
     rows.append(row("yearly_yield", "raw", "yield_2024_janmay",
                     jm24["hit100"].mean(), n=len(jm24),
                     note="2024 Jan-May only; seasonal anchor for the 2026 "
                          "comparison"))
+    return rows
+
+
+# ── (0b) censoring backfill from the fresher bis_scrape dispositions ─────
+
+def backfill_block(d: pd.DataFrame) -> list:
+    """Critic-E Y1 fix: events with an EMPTY open_data disposition_code sit
+    in the denominator with hit=0 (censoring deflates recent yield).
+    Re-score them from the scraped bis_scrape.disposition (scrape ran
+    2026-04..2026-07, fresher than the 2026-04-04 open_data bulk vintage)
+    and recompute recent yearly + 2026 monthly yields."""
+    conn = sqlite3.connect(str(config.DB_PATH))
+    bis = pd.read_sql_query(
+        "SELECT complaint_number, disposition FROM bis_scrape", conn)
+    conn.close()
+    dd = d.merge(bis, on="complaint_number", how="left")
+    code = (dd["disposition"].fillna("").str.extract(BIS_DISPO_RE,
+                                                     expand=False).fillna(""))
+    fixable = dd["od_empty"] & (code != "")
+    cmap = {c: classify_disposition(c) for c in code[fixable].unique()}
+    dd["outcome_corr"] = dd["outcome"]
+    dd.loc[fixable, "outcome_corr"] = code[fixable].map(cmap)
+    dd["hit100_corr"] = (dd["outcome_corr"] == "violation").astype(float) * 100
+    n_promoted = int(((dd["outcome_corr"] == "violation")
+                      & (dd["outcome"] != "violation")).sum())
+    print(f"  backfill: {int(fixable.sum()):,} of "
+          f"{int(dd['od_empty'].sum()):,} empty-disposition events carry a "
+          f"parseable scraped disposition; {n_promoted} become violations")
+
+    rows = [row("yearly_yield", "backfill_accounting", "n_backfilled",
+                int(fixable.sum()), n=int(dd["od_empty"].sum()),
+                note="censored events re-scored from bis_scrape.disposition "
+                     "(scraped through 2026-07); n = all empty-disposition "
+                     "events")]
+    for y in ["2024", "2025", "2026"]:
+        sub = dd[dd["year"] == y]
+        rows.append(row(
+            "yearly_yield", "backfilled_bis", f"yield_{y}",
+            sub["hit100_corr"].mean(), n=len(sub),
+            note="violation yield (pp) after backfilling empty dispositions "
+                 "from the scraped bis_scrape.disposition; censoring only "
+                 "deflates, so this is the honest recent read"))
+    m26 = dd[dd["year"] == "2026"]
+    for mon, sub in m26.groupby(m26["received_date"].str[:7]):
+        rows.append(row("yearly_yield", "monthly_2026_raw", mon,
+                        sub["hit100"].mean(), n=len(sub),
+                        note="open_data dispositions as published"))
+        rows.append(row("yearly_yield", "monthly_2026_backfilled", mon,
+                        sub["hit100_corr"].mean(), n=len(sub),
+                        note="backfilled; no fade into May = the turn is "
+                             "not a resolution-lag artifact"))
+        rows.append(row("yearly_yield", "monthly_2026_empty_share", mon,
+                        sub["od_empty"].mean() * 100, n=len(sub),
+                        note="share with empty open_data disposition (pp)"))
     return rows
 
 
@@ -333,6 +424,51 @@ def risk_block(d: pd.DataFrame) -> tuple[list, pd.DataFrame]:
                 continue
             rows.append(row("risk_scores", f"mean_p100_{pfx}", y,
                             mt["p100"].mean(), n=len(mt)))
+
+    # per-program panel match rates (critic E, Y2a): the panel match moved
+    # exactly where targeting moved, and within-8A too
+    sc["matched"] = sc["p100"].notna()
+    a8 = sc[sc["category_prefix"] == "8A"]
+    for h in halves:
+        sub8 = a8[a8["half"] == h]
+        if len(sub8):
+            rows.append(row("risk_scores", "match_8A", h,
+                            sub8["matched"].mean() * 100, n=len(sub8),
+                            note="share of 8A visits matched to a scored "
+                                 "panel lot (pp)"))
+    for y in YEARS:
+        sub8 = a8[a8["year"] == y]
+        if len(sub8):
+            rows.append(row("risk_scores", "match_8A_year", y,
+                            sub8["matched"].mean() * 100, n=len(sub8),
+                            note="yearly 8A panel match rate (pp)"))
+
+    # matched-panel scope note: the mean-p100 series is identified only
+    # for panel-matched visits; unmatched 2026 visits are construction
+    # stock the model cannot score, not demonstrably low-risk stock
+    def mrate(mask) -> float:
+        return float(sc.loc[mask, "matched"].mean() * 100)
+
+    m24h2 = mrate(sc["half"] == "2024H2")
+    m26h1 = mrate(sc["half"] == "2026H1")
+    a24 = mrate((sc["year"] == "2024") & (sc["category_prefix"] == "8A"))
+    a26 = mrate((sc["year"] == "2026") & (sc["category_prefix"] == "8A"))
+    um26 = sc[(sc["half"] == "2026H1") & ~sc["matched"]]
+    mt26 = sc[(sc["half"] == "2026H1") & sc["matched"]]
+    rows.append(row(
+        "risk_scores", "scope", "matched_panel_scope", m26h1, n=len(um26),
+        note=f"mean_p100 is identified only for visits matched to the "
+             f"pre-2020 residential panel; match fell {m24h2:.1f}% (2024H2) "
+             f"-> {m26h1:.1f}% (2026H1), within-8A {a24:.1f}% -> {a26:.1f}% "
+             f"(2024 -> 2026); unmatched 2026H1 visits (n = this row's n) "
+             f"are {um26['active_permit'].mean() * 100:.0f}% at active "
+             f"permits with a "
+             f"{(um26['outcome'] == 'violation').mean() * 100:.0f}% "
+             f"violation yield vs "
+             f"{(mt26['outcome'] == 'violation').mean() * 100:.0f}% among "
+             f"matched -- unscoreable construction/commercial stock, not "
+             f"demonstrably low-risk; the flat/declining score series is "
+             f"scoped to panel-scoreable residential lots"))
     return rows, sc
 
 
@@ -503,13 +639,15 @@ def make_figure(res: pd.DataFrame):
             "(full lookback)", transform=ax.transAxes, fontsize=8.5,
             color=MUTED)
 
+    bf26 = get(res, "yearly_yield", "backfilled_bis", "yield_2026")["estimate"]
     fig.suptitle("The 2025–26 discretionary yield jump, decomposed",
                  x=0.012, ha="left", fontsize=15.5, fontweight="bold",
                  color=INK)
     fig.text(0.012, 0.925,
              "agency-initiated discretionary inspections (8A/7G/1X/91/6X/…), "
              "2020–May 2026 · violation yield 30.7% (2024) → 41.5% (2025) → "
-             "43.8% (Jan–May 2026)",
+             f"43.8% (Jan–May 2026; {bf26:.1f}% after\nbackfilling "
+             "unresolved dispositions from the July 2026 scrape)",
              fontsize=10.5, color=MUTED)
     fig.savefig(ART / "proactive_yield_turn.png", bbox_inches="tight")
     plt.close(fig)
@@ -532,6 +670,7 @@ def main():
         mine = [r for r in rows if r["term"] == f"yield_{y}"][0]["estimate"]
         assert abs(mine / 100 - pub.loc[y, "violation_yield"]) < 5e-4, y
     print("  yearly yields match proactive_yearly_yield.csv")
+    rows += backfill_block(d)
 
     print("[2/5] shift-share decomposition over category prefixes")
     y24 = (d["year"] == "2024").to_numpy()
@@ -565,9 +704,19 @@ def main():
             sub = res[res["block"] == blk]
             if blk == "risk_scores":
                 sub = sub[sub["model"].isin(["mean_p100", "mean_risk_pctile",
-                                             "match", "model"])]
+                                             "match", "match_8A",
+                                             "match_8A_year", "scope",
+                                             "model"])]
             print(sub.drop(columns=["block", "window"]).round(2)
                   .to_string(index=False))
+        print("\n== censoring guard + backfill ==")
+        sub = res[res["model"].isin(["censoring_guard", "backfilled_bis",
+                                     "backfill_accounting",
+                                     "monthly_2026_raw",
+                                     "monthly_2026_backfilled",
+                                     "monthly_2026_empty_share"])]
+        print(sub.drop(columns=["block", "window"]).round(2)
+              .to_string(index=False))
     print(f"\nwrote {OUT / 'proactive_yield_turn.csv'}")
     print(f"wrote {ART / 'proactive_yield_turn.png'}")
 
@@ -580,6 +729,13 @@ def main():
     e26 = get(res, "lpm_year_effects", "pooled_cat_fe", "2026")
     r24 = get(res, "risk_scores", "mean_p100", "2024H2")["estimate"]
     r26 = get(res, "risk_scores", "mean_p100", "2026H1")["estimate"]
+    bf26 = get(res, "yearly_yield", "backfilled_bis", "yield_2026")["estimate"]
+    emp26 = get(res, "yearly_yield", "censoring_guard",
+                "empty_dispo_share_2026")["estimate"]
+    mt24 = get(res, "risk_scores", "match", "2024H2")["estimate"]
+    mt26 = get(res, "risk_scores", "match", "2026H1")["estimate"]
+    a824 = get(res, "risk_scores", "match_8A_year", "2024")["estimate"]
+    a826 = get(res, "risk_scores", "match_8A_year", "2026")["estimate"]
     print(f"\nVerdict: within-category share of the yield change "
           f"{w25:.0f}% (2024->2025), {w26:.0f}% (2024->2026 Jan-May); "
           f"pooled within-category year effect +{e25['estimate']:.1f}pp "
@@ -587,6 +743,13 @@ def main():
           f"+{e26['estimate']:.1f}pp [{e26['25pct']:.1f}, {e26['975pct']:.1f}] "
           f"in 2026; mean predicted risk of visited lots {r24:.1f} (2024H2) "
           f"-> {r26:.1f} (2026H1).")
+    print(f"Censoring: {emp26:.1f}% of 2026 events have an empty "
+          f"disposition at the open_data vintage; backfilling from the "
+          f"scraped dispositions moves 2026 Jan-May yield to {bf26:.1f} "
+          f"(deflation only, no fade through May). Scope: the risk-score "
+          f"series covers panel-matched visits only; match {mt24:.1f}% "
+          f"(2024H2) -> {mt26:.1f}% (2026H1), 8A {a824:.1f}% -> {a826:.1f}% "
+          f"(2024 -> 2026).")
 
 
 if __name__ == "__main__":

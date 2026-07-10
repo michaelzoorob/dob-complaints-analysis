@@ -18,12 +18,20 @@ Both panels mask tracts with fewer than 50 lots in their denominator
 rule grayed out most of Manhattan, whose tracts hold few residential
 lots, and Manhattan is the story's core geography).
 
+Caption-limit sensitivity (critic D, F7): the cross-tract Panel A x
+Panel B Spearman depends on the MIN_LOTS masking threshold and on tract
+size (both rates share panel-lot denominators), and Panel B is
+rank-identical to a plain risk-stock map — so the panel correlation
+documents where risk sits, not sweep placement. Those numbers go to a
+companion CSV so any caption stays within them.
+
 Inputs : data/analysis/proactive/proactive_events.csv.gz
          data/analysis/property_risk_panel_v2.csv.gz
          data/dob_complaints.db (via proactive_becker_margin -> dob_ledger)
          data/nyct2020.geojson
 Outputs: data/analysis/blog_posts/artifacts/proactive_map.png
          data/analysis/risk_models/proactive_map_tracts.csv
+         data/analysis/risk_models/proactive_map_sensitivity.csv
          + console report of top-10 NTAs per panel
 
 Run: /private/tmp/pyfix_venv/bin/python scripts/proactive_maps.py
@@ -155,6 +163,65 @@ def draw_panel(fig, ax, gdf, col, okcol, cmap, vmax, title, subtitle, cbar_label
     cb.set_label(cbar_label, fontsize=11, color=INK2)
 
 
+def sensitivity_table(out: pd.DataFrame) -> pd.DataFrame:
+    """Caption limits for the two-panel map (constructions mirror
+    scripts/audit/critic_proactive_D_becker.py, F7): Spearman by masking
+    threshold, the tract-size confound and its partial, and the
+    Panel-B-vs-plain-risk-stock near-identity."""
+    t = out[out["panel_lots"].notna()].copy()
+    rows = []
+    for min_lots in (20, 50, 100, 200, 400):
+        ok = (t["panel_lots"] >= min_lots) & (t["scored_lots"] >= min_lots)
+        b = t[ok]
+        rho = b["disc_per_1000"].corr(b["hr_never_swept_per_1000"],
+                                      method="spearman")
+        pea = b["disc_per_1000"].corr(b["hr_never_swept_per_1000"])
+        rows.append({"term": f"spearman_min_lots_{min_lots}", "value": rho,
+                     "n_tracts": int(ok.sum()),
+                     "note": f"panel A vs panel B, tracts with >= {min_lots} "
+                             f"lots in both denominators; pearson={pea:.3f}"})
+
+    b = t[(t["panel_lots"] >= MIN_LOTS) & (t["scored_lots"] >= MIN_LOTS)].copy()
+    b["hr_rate_all"] = b["n_highrisk"] / b["scored_lots"] * 1000.0
+    rows.append({
+        "term": "spearman_panelA_vs_risk_stock",
+        "value": b["disc_per_1000"].corr(b["hr_rate_all"], method="spearman"),
+        "n_tracts": len(b),
+        "note": "panel A vs top-decile-risk lots per 1,000 scored lots "
+                "INCLUDING swept ones (the plain risk-stock map)"})
+    rows.append({
+        "term": "spearman_panelB_vs_risk_stock",
+        "value": b["hr_never_swept_per_1000"].corr(b["hr_rate_all"],
+                                                   method="spearman"),
+        "n_tracts": len(b),
+        "note": "panel B is rank-identical to the plain risk-stock map, so "
+                "the A-B correlation cannot measure sweep placement; hang "
+                "within-neighborhood claims on the within-block selection "
+                "results (sweep_structure) instead"})
+    rows.append({
+        "term": "spearman_panelA_vs_tract_size",
+        "value": b["disc_per_1000"].corr(b["panel_lots"], method="spearman"),
+        "n_tracts": len(b),
+        "note": "both panels share panel-lot denominators; small tracts run "
+                "hot on both, inflating the raw correlation"})
+    rk = b[["disc_per_1000", "hr_never_swept_per_1000"]].rank()
+    Xl = np.c_[np.ones(len(b)), np.log(b["panel_lots"].to_numpy(float))]
+    resid = {}
+    for c in rk.columns:
+        yv = rk[c].to_numpy(float)
+        resid[c] = yv - Xl @ np.linalg.lstsq(Xl, yv, rcond=None)[0]
+    rows.append({
+        "term": "partial_rank_corr_given_log_tract_size",
+        "value": float(np.corrcoef(resid["disc_per_1000"],
+                                   resid["hr_never_swept_per_1000"])[0, 1]),
+        "n_tracts": len(b),
+        "note": "rank correlation of the two panels after partialling "
+                "log panel lots out of both"})
+    res = pd.DataFrame(rows)
+    res["window"] = WINDOW
+    return res
+
+
 def nta_report(gdf, num, den, label, n=10):
     """NTA rates over ALL tracts (masking is a per-tract display choice;
     NTA-level denominators are big enough to be honest), NTA den >= MIN_LOTS."""
@@ -192,6 +259,11 @@ def main():
                 "window"]
     out = gdf[csv_cols].rename(columns={"boroct2020": "bct2020"})
     out.to_csv(OUT / "proactive_map_tracts.csv", index=False)
+
+    sens = sensitivity_table(out)
+    sens.to_csv(OUT / "proactive_map_sensitivity.csv", index=False)
+    print("\ncaption-limit sensitivity (-> proactive_map_sensitivity.csv):")
+    print(sens[["term", "value", "n_tracts"]].round(3).to_string(index=False))
 
     print("[2/3] figure")
     lit_a = gdf.loc[gdf["ok_a"] == True, "disc_per_1000"]

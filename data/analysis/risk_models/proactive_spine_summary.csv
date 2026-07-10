@@ -24,15 +24,27 @@ active_permit_share_prefix_8A,0.8356,0.836,OK,spot check
 active_permit_share_prefix_7G,0.6957,0.696,OK,spot check
 ecb_ref_rows,167197.0,,,
 ecb_match_share,0.9467,0.95,OK,Wave-1: ~95% of refs
-jobs_rows,511174.0,,,permits_now first permit 2020+
-jobs_permit_span_share,0.9936,,,
-jobs_signoff_fill_share,0.6369,0.64,OK,Wave-1: 64% filled
-jobs_conversion_relaxed,1337.0,,,"Alt-CO family, 0 existing units, >0 proposed"
-jobs_conversion_strict_ge10,630.0,630.0,OK,Wave-1: 630 (proposed>=10)
-jobs_conversion_office_class,412.0,,,relaxed + PLUTO bldgclass O/K
+jobs_rows,511174.0,,,permits_now FILINGS first permitted 2020+ (pre-collapse)
+jobs_permit_span_share,0.9936,,,filing level
+jobs_signoff_fill_share,0.6369,0.64,OK,Wave-1: 64% filled (filing level)
+jobs_conversion_relaxed,1337.0,,,"filing level: Alt-CO family, 0 existing units, >0 proposed"
+jobs_conversion_strict_ge10,630.0,630.0,OK,Wave-1: 630 (filing level)
+jobs_conversion_office_class,412.0,,,filing level: relaxed + PLUTO bldgclass O/K
+projects_rows,426233.0,,,base projects after filing-suffix collapse (Critic B fix)
+projects_multi_filing_share,0.1085,,,
+projects_filings_per_project_mean,1.1993,,,
+projects_conversion_relaxed,376.0,,,any filing of the base flags
+projects_conversion_strict_ge10,155.0,,,any filing of the base flags (filing-level count 630)
+projects_conversion_office_class,162.0,,,any filing of the base flags
+active_stock_monthly_avg_2023__filings,100605.25,,,"pre-fix filing-level denominator, reference only"
+active_stock_monthly_avg_2023__projects,91152.4167,,,"base projects, citywide incl tract-unmatched"
+active_stock_monthly_avg_2025__filings,108306.3333,,,"pre-fix filing-level denominator, reference only"
+active_stock_monthly_avg_2025__projects,85436.3333,,,"base projects, citywide incl tract-unmatched"
+active_stock_chg_pct_2023_2025__filings,7.6548,,,Critic B: filings rise while projects fall
+active_stock_chg_pct_2023_2025__projects,-6.2709,,,Critic B: filings rise while projects fall
 panel_rows,178794.0,,,
 panel_tracts,2322.0,,,
 panel_months,77.0,,,
 panel_caller_total,522038.0,,,
 panel_proactive_total,235068.0,,,
-panel_active_job_months,5981779.0,,,
+panel_active_job_months,5220219.0,,,BASE-PROJECT months since Critic B collapse

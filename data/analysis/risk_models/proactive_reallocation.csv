@@ -9,9 +9,9 @@ headline,gap_pp,45.91728681149549,"top-unswept minus swept, tract-clustered",,,2
 headline,gap_pp_se,0.8318481008420529,,,,2020-01..2026-05
 headline,gap_pp_ci_lo,44.285945215062746,,,,2020-01..2026-05
 headline,gap_pp_ci_hi,47.54862840792823,,,,2020-01..2026-05
-headline,extra_viol_per_1000,459.1728681149549,"gap x 10 = extra violations per 1,000 inspections",,,2020-01..2026-05
-headline,extra_viol_per_1000_ci_lo,442.8594521506275,,,,2020-01..2026-05
-headline,extra_viol_per_1000_ci_hi,475.48628407928226,,,,2020-01..2026-05
+headline,prevalence_gap_per_1000_lots,459.1728681149549,"RELABELED (was extra_viol_per_1000): predicted 77-month any-violation prevalence gap x 10, per 1,000 LOTS; a predicted-vs-predicted prevalence contrast, NOT a per-visit find rate; see realized_basis and per_visit blocks for quotable margins",,,2020-01..2026-05
+headline,prevalence_gap_per_1000_lots_ci_lo,442.8594521506275,,,,2020-01..2026-05
+headline,prevalence_gap_per_1000_lots_ci_hi,475.48628407928226,"CI reflects sampling error of the prevalence contrast only, not the modeling choices the audit blocks vary",,,2020-01..2026-05
 headline,actual_rate_swept_pct,81.09739616181638,realized 2020+ rate; partly caused by the sweeps themselves,,,2020-01..2026-05
 headline,actual_rate_top_unswept_pct,98.49535994233715,realized rate despite no sweep (understates latent risk),,,2020-01..2026-05
 headline,units_median_swept,4.0,,,,2020-01..2026-05
@@ -34,3 +34,25 @@ calibration,pred_decile_07,7.895667224819021,value = mean predicted risk (pct),9
 calibration,pred_decile_08,29.707246620423923,value = mean predicted risk (pct),33.730588189274116,76693.0,2020-01..2026-05
 calibration,pred_decile_09,51.17470129039009,value = mean predicted risk (pct),52.7062443769314,76693.0,2020-01..2026-05
 calibration,pred_decile_10,80.68703488196797,value = mean predicted risk (pct),77.15306481686724,76693.0,2020-01..2026-05
+realized_basis,realized_gap_per_1000_lots,173.9796378052077,"realized-vs-realized: 98.5 minus 81.1 (actual_rate_* rows) x 10; still a 77-month prevalence contrast per 1,000 lots, and swept-lot paper partly sweep-caused",,,2020-01..2026-05
+sweep_findable,sweep_findable_rate_swept_pct,73.36696999729705,any 2020-26 ECB citation or union construction-family violation,,,2020-01..2026-05
+sweep_findable,sweep_findable_rate_top_unswept_pct,79.6287953869718,original top set,,,2020-01..2026-05
+sweep_findable,sweep_findable_gap_per_1000,62.61825389674755,periodic boiler/elevator/facade/energy/gas streams removed from the outcome; original top set,,,2020-01..2026-05
+sweep_findable,sweep_findable_auc_refit,0.7917339752771906,"logit refit on the sweep-findable outcome, same design matrix",,,2020-01..2026-05
+sweep_findable,sweep_findable_gap_refit_per_1000,76.85377060996487,top set re-picked by the refit model; its realized sweep-findable rate is 81.1,,,2020-01..2026-05
+sweep_findable,field_only_rate_swept_pct,72.06054599513469,"ECB excl. elevator/boiler device types, or union construction",,,2020-01..2026-05
+sweep_findable,field_only_rate_top_unswept_pct,64.68150283809352,original top set,,,2020-01..2026-05
+sweep_findable,field_only_gap_per_1000,-73.79043157041167,SIGN FLIPS: on the strictest field-only outcome the swept lots out-realize the model's top never-swept picks,,,2020-01..2026-05
+per_visit,sweep_yield_top_decile_pct,8.76899016979446,"7G per-visit violation yield at top-decile-risk lots, n=8,952 visits",,,2020-01..2026-05
+per_visit,sweep_yield_own_lots_pct,8.631001371742112,"7G per-visit yield at the panel lots it actually swept, n=18,225 visits",,,2020-01..2026-05
+per_visit,sweep_yield_gap_per_1000,1.3798879805234776,re-aiming sweeps at top-decile lots buys ~nothing per visit,,,2020-01..2026-05
+per_visit,compliance_8a_yield_at_flagged_pct,46.880176697956934,"8A per-visit yield at the 11,099 flagged (top never-swept) lots, n=1,811 visits",,,2020-01..2026-05
+per_visit,alldisc_yield_at_flagged_pct,35.671342685370746,"all discretionary programs at the flagged lots, n=5,489 non-7G visits",,,2020-01..2026-05
+per_visit,program_mix_cap_per_1000,270.40341313628636,"all-discretionary yield at flagged lots minus 7G yield at its own lots, x10: the most a PROGRAM change (8A/LL79-style visits, not a sweep re-aim) could buy per 1,000 visits",,,2020-01..2026-05
+framing,panel_never_swept_pct,98.55279765506019,"share of ALL scored panel lots with no 2020+ 7G sweep; never-swept is the base condition, not neglect",,,2020-01..2026-05
+framing,top_decile_never_swept_pct,93.15061348493343,"n=76,693 top-decile-risk lots",,,2020-01..2026-05
+framing,sweep_overcoverage_top_decile,4.732846473760673,P(swept | top decile) / P(swept): sweeps OVER-cover the top decile relative to the panel,,,2020-01..2026-05
+framing,n_7g_events_2019,6164.0,7G category exists only since 2019; these precede the 2020+ events spine,,,2020-01..2026-05
+framing,top_unswept_with_2019_sweep,236.0,"of the 11,099 top never-swept lots, had a 2019 7G sweep invisible to the 2020+ spine; say 'in the 2020-26 window', not 'no sweep ever'",,,2020-01..2026-05
+out_of_time,oot_auc_2000s_to_2010s,0.803105325148147,logit of any 2010-19 violation on 2000-09 history + slow-moving traits; no 2020s data anywhere in fit or selection,,,2020-01..2026-05
+out_of_time,oot_top_realized_any_pct,97.73853500315343,"realized 2020-26 any-violation rate of that model's top 11,099 never-swept picks",,,2020-01..2026-05

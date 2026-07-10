@@ -19,6 +19,10 @@ d = ev[(ev.agency == 1) & (ev.family == "discretionary_field")]
 out = d.groupby("year").agg(
     n=("outcome", "size"),
     violation_yield=("outcome", lambda s: round((s == "violation").mean(), 4)))
+
+# agency share of all inspections by year (quoted in the portfolio section)
+share = (ev.groupby("year")["agency"].mean().round(4).rename("agency_share"))
+out = out.join(share)
 dest = config.DATA_DIR / "analysis" / "risk_models" / "proactive_yearly_yield.csv"
 out.to_csv(dest)
 print(out.to_string(), "\nwrote", dest)

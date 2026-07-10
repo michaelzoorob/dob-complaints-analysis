@@ -1,0 +1,137 @@
+finding,term,value,note
+F0,auc_reproduced,0.8798621050106873,
+F0,n_swept_panel_lots,11099,
+F0,mean_pred_swept,52.88418508401251,
+F0,mean_pred_top_unswept,98.80147189550797,
+F0,swept_bbls_unmatched_to_panel,4395,
+F0,unmatched_found_in_full_pluto,3235,"high share = real non-residential lots, not a join bug"
+F1,claimed_extra_per_1000_pred_basis,459.17286811495467,
+F1,realized_basis_extra_per_1000,173.9796378052077,same exercise using realized 77-month rates for BOTH groups
+F1,swept_underprediction_pp,28.21321107780387,realized minus predicted on the swept subgroup
+F1,swept_calib_d01_pred,3.173148141337887,
+F1,swept_calib_d01_real,56.98924731182796,n=93
+F1,swept_calib_d02_pred,3.9269480983628973,
+F1,swept_calib_d02_real,61.63522012578616,n=159
+F1,swept_calib_d03_pred,4.48862304977388,
+F1,swept_calib_d03_real,56.03112840466926,n=257
+F1,swept_calib_d04_pred,4.932797080058464,
+F1,swept_calib_d04_real,60.30927835051546,n=388
+F1,swept_calib_d05_pred,5.496262989128618,
+F1,swept_calib_d05_real,61.904761904761905,n=525
+F1,swept_calib_d06_pred,6.298185764066716,
+F1,swept_calib_d06_real,61.73020527859238,n=682
+F1,swept_calib_d07_pred,8.046513188331767,
+F1,swept_calib_d07_real,63.786407766990294,n=1030
+F1,swept_calib_d08_pred,28.763914421857287,
+F1,swept_calib_d08_real,74.05475880052151,n=1534
+F1,swept_calib_d09_pred,51.82285054068914,
+F1,swept_calib_d09_real,79.62648556876061,n=1178
+F1,swept_calib_d10_pred,88.01344171471303,
+F1,swept_calib_d10_real,95.0885208452313,n=5253
+F1,swept_lots_only_sweep_generated_paper,118,any_viol=1 solely via ECBs the 7G events themselves wrote
+F1,realized_swept_excl_sweep_generated,80.03423731867736,
+F1,realized_basis_extra_per_1000_excl_sweepgen,184.6112262365979,
+F1,n_7g_events_at_swept_panel_lots,18225,"the 11,099 lots absorbed this many sweep inspections"
+F2,union2020_family_elev,277714,
+F2,union2020_family_boiler,201422,
+F2,union2020_family_gas_plumb,112672,
+F2,union2020_family_energy,59392,
+F2,union2020_family_constr,32017,
+F2,union2020_family_facade,11722,
+F2,union2020_family_other,11070,
+F2,swept_any_viol_2020on_rate,81.09739616181638,
+F2,swept_viol_v2_rate,73.36696999729705,
+F2,swept_viol_v3_rate,72.06054599513469,
+F2,swept_periodic_only_rate,7.730426164519326,
+F2,top_unswept_any_viol_2020on_rate,98.49535994233715,
+F2,top_unswept_viol_v2_rate,79.6287953869718,
+F2,top_unswept_viol_v3_rate,64.68150283809352,
+F2,top_unswept_periodic_only_rate,18.866564555365347,
+F2,realized_gap_v2_per_1000,62.61825389674747,"sweep-findable, original top set"
+F2,realized_gap_v3_per_1000,-73.79043157041176,
+F2,auc_v2,0.7917339752771906,
+F2,mean_pred_v2_swept,34.74291405660691,
+F2,mean_pred_v2_top2,83.94322155754946,
+F2,pred_gap_v2_per_1000,492.0030750094256,
+F2,realized_v2_top2,81.05234705829353,
+F2,realized_v2_gap_refit_per_1000,76.8537706099649,
+F2,realized_any_top2,98.08991801063159,
+F3,disc_events_matched_to_panel_share,0.7134455383936009,
+F3,pervisit_d01_all_disc,32.53301320528211,n=833
+F3,pervisit_d01_7g,12.8,n=125
+F3,pervisit_d02_all_disc,32.076764907470874,n=1459
+F3,pervisit_d02_7g,8.658008658008658,n=231
+F3,pervisit_d03_all_disc,29.50108459869848,n=1844
+F3,pervisit_d03_7g,4.497354497354497,n=378
+F3,pervisit_d04_all_disc,29.958158995815896,n=2390
+F3,pervisit_d04_7g,6.710310965630114,n=611
+F3,pervisit_d05_all_disc,30.29940119760479,n=3340
+F3,pervisit_d05_7g,7.710280373831775,n=856
+F3,pervisit_d06_all_disc,28.998763906056862,n=4045
+F3,pervisit_d06_7g,8.140610545790935,n=1081
+F3,pervisit_d07_all_disc,30.415973377703825,n=6010
+F3,pervisit_d07_7g,8.780795957043589,n=1583
+F3,pervisit_d08_all_disc,32.12256267409471,n=8975
+F3,pervisit_d08_7g,8.770524629555467,n=2497
+F3,pervisit_d09_all_disc,31.053811659192824,n=7136
+F3,pervisit_d09_7g,9.523809523809524,n=1911
+F3,pervisit_d10_all_disc,32.246469833119384,n=35055
+F3,pervisit_d10_7g,8.76899016979446,n=8952
+F3,pervisit_at_top_unswept_all,35.671342685370746,n=5489 non-7G discretionary visits at those exact lots
+F3,pervisit_7g_at_decile10_lots,8.76899016979446,7G yield when sweeps DID visit top-decile-risk lots
+F3,pervisit_7g_at_its_own_lots,8.631001371742112,
+F3,implied_honest_gain_7g_frame_per_1000,1.3798879805234776,
+F3,implied_honest_gain_disc_frame_per_1000,270.40341313628636,
+F4,top_decile_n,76693,
+F4,top_decile_never_swept_share,93.15061348493343,
+F4,panel_never_swept_share,98.55279765506019,
+F4,sweep_enrichment_top_decile,4.732846473760673,"P(swept | top decile) / P(swept), >1 = sweeps over-cover the top decile"
+F4,open_data_7g_min_year,2019,7G category exists only since
+F4,n_7g_events_2019,6164,
+F4,top11099_with_2019_sweep,236,'no sweep ever' lots that in fact had a 2019 7G sweep
+F4,hr_unswept_with_2019_sweep,1067,of 71440 map-version never-swept top-decile lots
+F4,active_permit_share_7g_events,0.6957179427507564,sweeps are construction-site enforcement
+F4,swept_median_units,4.0,
+F4,swept_prewar_share,0.5259032345256329,
+F4,swept_median_yearbuilt,1931.0,
+F4,top_unswept_median_units,65.0,
+F4,top_unswept_prewar_share,0.5507703396702406,
+F4,top_unswept_median_yearbuilt,1936.0,
+F4,top_unswept_yearbuilt_ge2020,46,
+F5,acs_vintage,2023,acs/acs5 2023 = 2019-2023 window; NOT strictly pre-2020
+F5,pluto_vintage,current-socrata,"class/size/age/bldgarea are current-vintage, not 2019 PLUTO"
+F5,value_rank_in_features,0,value_rank is NOT a model feature (verified)
+F5,split_half_holdout_auc,0.8793035588800543,
+F5,split_half_top_decile_pred,80.6678359652026,
+F5,split_half_top_decile_real,77.40067304933086,
+F5,split_half_topunswept_pred,98.74475120364039,
+F5,split_half_topunswept_real,98.55829879257524,
+F5,auc_drop_tract_poverty,0.8790367610281971,
+F5,top_set_jaccard_drop_poverty,0.9573229873908826,
+F5,top_realized_drop_poverty,98.43229119740518,
+F5,oot_auc_2000s_predicting_2010s,0.803105325148147,
+F5,oot_top_realized_any_2020on,97.73853500315343,realized 2020-26 rate of top picks from a model with no 2020s data
+F5,oot_top_realized_v2_2020on,77.78178214253536,
+F5,oot_vs_orig_top_jaccard,0.7392462587166027,
+F6,slope_baseline_replication,-0.4365587740654794,"se=0.085, n=91440"
+F6,slope_denominator_all_pluto_lots,-0.5137250636630106,"se=0.081, n=91900"
+F6,slope_tracts_ge50_panel_lots,-0.31788565120751827,"se=0.085, n=83306"
+F6,slope_deciles_1to9,-0.25401787324380515,se=0.103
+F6,events_matched_to_panel_share_f6,0.49567685163233716,
+F6,slope_building_controls,-0.2549810362744586,"se=0.122, n=71086 (panel-matched events only)"
+F6,slope_panel_matched_no_controls,-0.4261469724476642,"se=0.094, same sample as controls row"
+F6,slope_excluding_8A,0.04293559416818494,se=0.094
+F6,no_access_d01,3.5108958837772395,
+F6,no_access_d10,1.202212070209185,
+F7,spearman_minlots_20,0.8240108050257023,"n=2087, pearson=0.612"
+F7,spearman_minlots_50,0.8054454750352159,"n=1976, pearson=0.707"
+F7,spearman_minlots_100,0.7786361451443238,"n=1824, pearson=0.739"
+F7,spearman_minlots_200,0.7013048688351781,"n=1458, pearson=0.763"
+F7,spearman_minlots_400,0.5422480270420742,"n=714, pearson=0.627"
+F7,spearman_disc_vs_riskstock,0.8156979185881722,panel A vs top-decile RATE incl. swept (risk-stock map)
+F7,spearman_unsweptrate_vs_riskstock,0.9990096986365338,panel B is nearly the risk-stock map
+F7,spearman_disc_vs_panel_lots,-0.6734417411831375,
+F7,partial_rank_corr_given_log_lots,0.626321510609785,
+F7,map_top_decile_lots,76693,
+F7,map_never_swept_top_decile,71440,
+F7,map_never_swept_share,93.15061348493343,

@@ -29,6 +29,22 @@ rate (classify_disposition == "violation"), ECB-hit rate (linked ECB
 violation number present), CLASS-1 share of severity-matched ECB hits, and
 the unconditional CLASS-1 rate per event.
 
+Critic-A additions (critic_proactive_A_flag_origin.py, section B; carried
+in a `value` column):
+  cold_warm_reweight    the raw cold-vs-warm violation gap (45.4 vs 39.4)
+                        is ~2/3 category mix: within-prefix reweighted
+                        gaps at pooled / warm / cold category weights
+                        (prefixes with >=30 events on each side). Quote
+                        "cold yields at least as much as warm (+1.5 to
+                        +2.3 pp within category)", not the raw gap.
+  same_day_inspection   share of cold (and warm) rows inspected the SAME
+                        day the complaint was received (open_data
+                        inspection_date), with violation rates same-day
+                        vs inspection-after-receipt: a large slice of
+                        "cold discovery" is paperwork documenting an
+                        inspection already happening, so "discovery is
+                        highest-yield" does not survive.
+
 Outputs
   data/analysis/risk_models/proactive_decomposition.csv
   data/analysis/blog_posts/artifacts/proactive_decomposition.png
@@ -37,6 +53,7 @@ Run:  /private/tmp/pyfix_venv/bin/python scripts/proactive_decomposition.py
 """
 
 import os
+import sqlite3
 import sys
 
 import matplotlib
@@ -49,6 +66,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SPINE_DIR = os.path.join(ROOT, "data", "analysis", "proactive")
 RISK_DIR = os.path.join(ROOT, "data", "analysis", "risk_models")
 ART_DIR = os.path.join(ROOT, "data", "analysis", "blog_posts", "artifacts")
+DB_PATH = os.path.join(ROOT, "data", "dob_complaints.db")
 
 OUT_CSV = os.path.join(RISK_DIR, "proactive_decomposition.csv")
 OUT_PNG = os.path.join(ART_DIR, "proactive_decomposition.png")
@@ -80,16 +98,16 @@ plt.rcParams.update({
 
 def load_events() -> pd.DataFrame:
     """Spine events with the columns this decomposition needs."""
-    cols = ["received_date", "category_prefix", "family", "agency", "bbl",
-            "outcome", "ecb_number", "ecb_severity"]
+    cols = ["complaint_number", "received_date", "category_prefix", "family",
+            "agency", "bbl", "outcome", "ecb_number", "ecb_severity"]
     pq = os.path.join(SPINE_DIR, "proactive_events.parquet")
     gz = os.path.join(SPINE_DIR, "proactive_events.csv.gz")
     if os.path.exists(pq):
         ev = pd.read_parquet(pq, columns=cols)
     else:
         ev = pd.read_csv(gz, usecols=cols,
-                         dtype={"bbl": str, "ecb_number": str,
-                                "ecb_severity": str})
+                         dtype={"complaint_number": str, "bbl": str,
+                                "ecb_number": str, "ecb_severity": str})
     ev["received"] = pd.to_datetime(ev["received_date"], format="%Y-%m-%d")
     ev["bbl"] = ev["bbl"].fillna("")
     ev["ecb_hit"] = (ev["ecb_number"].fillna("") != "").astype("int8")
@@ -135,6 +153,100 @@ def add_warm_flag(ev: pd.DataFrame) -> pd.DataFrame:
           f"mean prior complaints (warm agency rows) "
           f"{ag.loc[ag['warm'] == 1, 'prior_730'].mean():.1f}")
     return ev
+
+
+def add_inspection_lag(ev: pd.DataFrame) -> pd.DataFrame:
+    """insp_lag = days from received to open_data.inspection_date (NaN when
+    no inspection date). Same-day (lag 0) agency records largely document
+    an inspection already happening, not a lead that was then checked."""
+    conn = sqlite3.connect(DB_PATH)
+    od = pd.read_sql_query(
+        "SELECT complaint_number, inspection_date FROM open_data", conn)
+    conn.close()
+    od["insp"] = pd.to_datetime(od["inspection_date"], format="%m/%d/%Y",
+                                errors="coerce")
+    ev = ev.merge(od[["complaint_number", "insp"]], on="complaint_number",
+                  how="left")
+    ev["insp_lag"] = (ev["insp"] - ev["received"]).dt.days
+    print(f"Inspection dates: {ev['insp_lag'].notna().mean():.3f} of spine "
+          f"events carry an open_data inspection_date")
+    return ev
+
+
+def cold_warm_extra_rows(ev: pd.DataFrame) -> pd.DataFrame:
+    """Critic-A B4/B5 blocks: category-mix reweighting of the cold-vs-warm
+    violation gap, and the same-day-inspection (documentation) channel
+    inside the cold slice. Values ride in a dedicated `value` column
+    (gaps in pp, shares/rates as 0-1 like the rest of the table)."""
+    ag = ev[ev["agency"] == 1]
+    disc = ag[ag["family"].isin(DISCRETIONARY_FAMILIES)]
+    cold = disc[disc["warm"] == 0]
+    warm = disc[disc["warm"] == 1]
+    raw_gap = ((cold["outcome"] == "violation").mean()
+               - (warm["outcome"] == "violation").mean()) * 100
+
+    g = (disc.groupby(["category_prefix", "warm"])
+         .agg(n=("outcome", "size"),
+              viol=("outcome", lambda s: (s == "violation").mean()))
+         .reset_index())
+    p = g.pivot(index="category_prefix", columns="warm", values=["n", "viol"])
+    p.columns = ["n_cold", "n_warm", "v_cold", "v_warm"]
+    p = p.fillna(0)
+    both = p[(p["n_cold"] >= 30) & (p["n_warm"] >= 30)].copy()
+    both["gap"] = both["v_cold"] - both["v_warm"]
+    w_pool = both["n_cold"] + both["n_warm"]
+
+    def rw_row(name, weights, desc):
+        return {"group": "cold_warm_reweight", "slice": name,
+                "description": desc,
+                "n": int(weights.sum()),
+                "value": round(float((both["gap"] * weights
+                                      / weights.sum()).sum() * 100), 4)}
+
+    rows = [
+        {"group": "cold_warm_reweight", "slice": "raw_pooled_gap_pp",
+         "description": "cold minus warm violation rate, pooled "
+                        "discretionary slice (pp); ~2/3 of it is category "
+                        "mix, see the reweighted rows",
+         "n": len(disc), "value": round(float(raw_gap), 4)},
+        rw_row("within_prefix_pooled_mix_pp", w_pool,
+               "within-prefix cold-minus-warm gap (pp) at pooled category "
+               f"weights; {len(both)} prefixes with >=30 cold and >=30 warm "
+               "events"),
+        rw_row("within_prefix_warm_mix_pp", both["n_warm"],
+               "within-prefix cold-minus-warm gap (pp) at warm-slice "
+               "category weights"),
+        rw_row("within_prefix_cold_mix_pp", both["n_cold"],
+               "within-prefix cold-minus-warm gap (pp) at cold-slice "
+               "category weights"),
+    ]
+
+    # same-day-inspection (documentation) channel, cold vs warm
+    for tag, sub in (("cold", cold), ("warm", warm)):
+        s = sub[sub["insp_lag"].notna()]
+        same = s[s["insp_lag"] == 0]
+        lead = s[s["insp_lag"] > 0]
+        rows += [
+            {"group": "same_day_inspection", "slice": f"{tag}_same_day_share",
+             "description": f"share of {tag} rows (with a dated inspection) "
+                            "inspected the day the complaint was received; "
+                            "record-opened-at-inspection documentation",
+             "n": len(s),
+             "value": round(float((s["insp_lag"] == 0).mean()), 4)},
+            {"group": "same_day_inspection",
+             "slice": f"{tag}_same_day_violation_rate",
+             "description": f"violation-disposition rate of same-day {tag} "
+                            "rows",
+             "n": len(same),
+             "value": round(float((same["outcome"] == "violation").mean()), 4)},
+            {"group": "same_day_inspection",
+             "slice": f"{tag}_after_receipt_violation_rate",
+             "description": f"violation-disposition rate of {tag} rows "
+                            "inspected strictly after receipt",
+             "n": len(lead),
+             "value": round(float((lead["outcome"] == "violation").mean()), 4)},
+        ]
+    return pd.DataFrame(rows)
 
 
 def metrics(sub: pd.DataFrame, group: str, slice_name: str, desc: str,
@@ -287,7 +399,10 @@ def main() -> None:
     os.makedirs(ART_DIR, exist_ok=True)
     ev = load_events()
     ev = add_warm_flag(ev)
+    ev = add_inspection_lag(ev)
     table = build_table(ev)
+    extra = cold_warm_extra_rows(ev)
+    table = pd.concat([table, extra], ignore_index=True)
     table.to_csv(OUT_CSV, index=False)
     make_figure(table)
 
@@ -296,6 +411,18 @@ def main() -> None:
         print(table.drop(columns="description").to_string(index=False))
     print(f"\nwrote {OUT_CSV}")
     print(f"wrote {OUT_PNG}")
+
+    rw = extra.set_index("slice")["value"]
+    print(f"\nVerdict (critic-A blocks): raw cold-minus-warm gap "
+          f"{rw['raw_pooled_gap_pp']:+.2f} pp, but within category the "
+          f"reweighted gap is {rw['within_prefix_pooled_mix_pp']:+.2f} pp "
+          f"(warm mix {rw['within_prefix_warm_mix_pp']:+.2f}, cold mix "
+          f"{rw['within_prefix_cold_mix_pp']:+.2f}); "
+          f"{rw['cold_same_day_share'] * 100:.1f}% of cold rows are "
+          f"inspected same-day ({rw['cold_same_day_violation_rate'] * 100:.1f}"
+          f"% viol vs {rw['cold_after_receipt_violation_rate'] * 100:.1f}% "
+          f"after receipt). Quote 'cold yields at least as much as warm "
+          f"(+1.5 to +2.3 pp within category)', not the raw gap.")
 
 
 if __name__ == "__main__":

@@ -12,20 +12,29 @@ the summary lands in data/analysis/risk_models/.
       ref_311), BIN, zero-padded BBL, bct2020 tract + NTA, priority,
       assigned unit, disposition outcome (disposition_codes.
       classify_disposition), linked ECB violation (first token of
-      bis_scrape.ecb_violation -> ecb_violations severity + penalty), and
-      the permit active at the received date (largest estimated cost when
-      several are active at the BIN).
+      bis_scrape.ecb_violation -> ecb_violations severity + penalty), the
+      permit active at the received date (largest estimated cost when
+      several are active at the BIN), and active_job_key (that filing
+      number stripped to its base project).
   jobs.parquet|csv.gz
-      DOB NOW jobs first permitted 2020+, joined to permit spans, with
-      dwelling-unit deltas, conversion flags (strict/relaxed/office),
-      tract, and active-month span columns.
+      DOB NOW BASE PROJECTS first permitted 2020+. permits_now rows are
+      FILINGS (an initial -I1 plus subsequent -S/-P/-Z filings of the same
+      base job); Critic B showed subsequent filings proliferated with DOB
+      NOW adoption (their share of filing-level active stock tripled
+      2022->2025), so filings are collapsed on the base key
+      (job_filing_number minus the -[A-Z]<digits> suffix): active span =
+      union across the base's filings, conversion flags any-flagged,
+      cost/floor = max across filings, identity fields from the
+      largest-cost filing, n_filings kept for reference.
   tract_month.csv.gz
       bct2020 x month panel 2020-01..2026-05: caller complaint counts,
-      proactive counts by family, active-job counts, residential units —
-      ready for the complaint-indexing PPML.
+      proactive counts by family, active BASE-PROJECT counts (column name
+      active_jobs kept for consumers), residential units — ready for the
+      complaint-indexing PPML.
   risk_models/proactive_spine_summary.csv
       row counts and verification shares checked against the Wave-1
-      inventory (proactive_enforcement_plan.md).
+      inventory (proactive_enforcement_plan.md), plus filing-vs-project
+      stock diagnostics for the Critic B collapse.
 
 Run:  /private/tmp/pyfix_venv/bin/python scripts/proactive_spine.py
 """
@@ -59,6 +68,10 @@ CONVERSION_JOB_TYPES = (
     "Alteration CO",
     "ALT-CO - New Building with Existing Elements to Remain",
 )
+
+# DOB NOW filing suffix (-I1 initial, -S1/-S2 subsequent, -P1 post-approval
+# amendment, -Z1 zoning, ...); stripping it yields the base project key
+JOB_SUFFIX_RE = r"-[A-Z]\d+$"
 
 # Wave-1 inventory expectations (proactive_enforcement_plan.md, output B)
 EXPECT = {
@@ -248,6 +261,9 @@ def add_active_permit(ev: pd.DataFrame, conn) -> pd.DataFrame:
     ev.loc[m["eid"], "active_permit"] = np.int8(1)
     ev.loc[m["eid"], "active_job_filing_number"] = m["job_filing_number"].to_numpy()
     ev.loc[m["eid"], "active_permit_cost"] = m["cost"].to_numpy()
+    # base-project key for the linked filing (Critic B collapse)
+    ev["active_job_key"] = (ev["active_job_filing_number"]
+                            .str.replace(JOB_SUFFIX_RE, "", regex=True))
 
     by_agency = ev.groupby("agency")["active_permit"].mean()
     print(f"  permit interval join: {n_pairs:,} BIN pairs -> "
@@ -318,15 +334,70 @@ def build_jobs(conn, pt: pd.DataFrame, pl_class: pd.DataFrame) -> pd.DataFrame:
     jobs["active_start_month"] = jobs["active_start"].dt.strftime("%Y-%m")
     jobs["active_end_month"] = jobs["active_end"].dt.strftime("%Y-%m")
 
-    print(f"Jobs: {len(jobs):,} first-permitted 2020+; "
+    print(f"Filings: {len(jobs):,} first-permitted 2020+; "
           f"permit-span match {(jobs['n_permits'] > 0).mean():.3f}; "
           f"signoff fill {jobs['signoff_date'].notna().mean():.3f}; "
           f"tract match {jobs['bct2020'].notna().mean():.3f}")
-    print(f"  conversion relaxed {int(jobs['conversion'].sum()):,} / "
+    print(f"  filing-level conversion relaxed {int(jobs['conversion'].sum()):,} / "
           f"strict>=10u {int(jobs['conversion_ge10'].sum()):,} / "
           f"office-class {int(jobs['conversion_office'].sum()):,}; "
           f"no active_end {jobs['active_end'].isna().sum():,}")
     return jobs
+
+
+def collapse_to_projects(filings: pd.DataFrame) -> pd.DataFrame:
+    """Collapse DOB NOW filings to base projects (Critic B fix).
+
+    One row per base key (job_filing_number minus its -I1/-S2/... suffix):
+    active span = union across the base's filings (min start, max end,
+    NaT-skipping), conversion flags any-flagged, cost/floor = max,
+    permit counts summed, identity fields (job type, BBL, tract, class,
+    units, BIN) from the largest-cost filing, n_filings for reference.
+    """
+    f = filings.copy()
+    f["job_key"] = f["job_filing_number"].str.replace(JOB_SUFFIX_RE, "",
+                                                      regex=True)
+
+    rep = (f.sort_values("initial_cost", ascending=False, kind="stable")
+           .drop_duplicates("job_key")
+           [["job_key", "job_filing_number", "job_type", "building_type",
+             "existing_dwelling_units", "proposed_dwelling_units", "bin",
+             "bbl", "bct2020", "bldgclass"]]
+           .rename(columns={"job_filing_number": "largest_cost_filing"}))
+
+    agg = f.groupby("job_key").agg(
+        n_filings=("job_filing_number", "size"),
+        initial_cost=("initial_cost", "max"),
+        initial_cost_sum=("initial_cost", "sum"),
+        total_construction_floor_area=("total_construction_floor_area", "max"),
+        filing_date=("filing_date", "min"),
+        first_permit_date=("first_permit_date", "min"),
+        signoff_date=("signoff_date", "max"),
+        first_issued=("first_issued", "min"),
+        last_expired=("last_expired", "max"),
+        n_permits=("n_permits", "sum"),
+        active_start=("active_start", "min"),
+        active_end=("active_end", "max"),
+        conversion=("conversion", "max"),
+        conversion_ge10=("conversion_ge10", "max"),
+        conversion_office=("conversion_office", "max"),
+    ).reset_index()
+
+    proj = agg.merge(rep, on="job_key", how="left")
+    proj["active_start_month"] = proj["active_start"].dt.strftime("%Y-%m")
+    proj["active_end_month"] = proj["active_end"].dt.strftime("%Y-%m")
+
+    multi = proj["n_filings"] > 1
+    print(f"Projects: {len(proj):,} base keys from {len(f):,} filings "
+          f"(multi-filing share {multi.mean():.3f}, max filings "
+          f"{int(proj['n_filings'].max())}); tract match "
+          f"{proj['bct2020'].notna().mean():.3f}")
+    print(f"  project-level conversion (any filing) relaxed "
+          f"{int(proj['conversion'].sum()):,} / strict>=10u "
+          f"{int(proj['conversion_ge10'].sum()):,} / office-class "
+          f"{int(proj['conversion_office'].sum()):,}; "
+          f"no active_end {proj['active_end'].isna().sum():,}")
+    return proj
 
 
 # ── 3. Tract-month panel ─────────────────────────────────────────────────
@@ -349,7 +420,9 @@ def build_tract_month(ev: pd.DataFrame, jobs: pd.DataFrame,
         cols[f"proactive_{f}"] = np.bincount(cell[is_agency & (fam == f)],
                                              minlength=n_t * n_m)
 
-    # active jobs: expand each job's month span (vectorized repeat/arange)
+    # active base projects: expand each project's union month span
+    # (vectorized repeat/arange); column name active_jobs kept for
+    # consumers, semantics are projects since the Critic B collapse
     j = jobs[jobs["bct2020"].notna() & jobs["active_start"].notna()
              & jobs["active_end"].notna()]
     s = month_index(j["active_start"]).clip(lower=0).to_numpy()
@@ -371,14 +444,28 @@ def build_tract_month(ev: pd.DataFrame, jobs: pd.DataFrame,
     print(f"Panel: {len(panel):,} rows = {n_t:,} tracts x {n_m} months; "
           f"caller {panel['caller_complaints'].sum():,}, "
           f"proactive {panel['proactive_total'].sum():,}, "
-          f"job-months {panel['active_jobs'].sum():,}")
+          f"project-months {panel['active_jobs'].sum():,}")
     return panel
 
 
 # ── 4. Verification summary ──────────────────────────────────────────────
 
-def build_summary(ev: pd.DataFrame, jobs: pd.DataFrame,
-                  panel: pd.DataFrame) -> pd.DataFrame:
+def citywide_monthly_stock(df: pd.DataFrame) -> pd.Series:
+    """Rows active per panel month (citywide, no tract requirement)."""
+    ok = df["active_start"].notna() & df["active_end"].notna()
+    s = month_index(df.loc[ok, "active_start"]).clip(lower=0).to_numpy()
+    t = month_index(df.loc[ok, "active_end"]).clip(upper=N_MONTHS - 1).to_numpy()
+    keep = t >= s
+    s, t = s[keep], t[keep]
+    lens = t - s + 1
+    idx = np.repeat(s, lens) + (np.arange(lens.sum())
+                                - np.repeat(np.cumsum(lens) - lens, lens))
+    months = pd.period_range("2020-01", "2026-05", freq="M").astype(str)
+    return pd.Series(np.bincount(idx, minlength=N_MONTHS), index=months)
+
+
+def build_summary(ev: pd.DataFrame, filings: pd.DataFrame,
+                  projects: pd.DataFrame, panel: pd.DataFrame) -> pd.DataFrame:
     rows = []
 
     def add(metric, value, expected=None, note=""):
@@ -419,23 +506,56 @@ def build_summary(ev: pd.DataFrame, jobs: pd.DataFrame,
         (ev["ecb_severity"].notna() & has_ref).sum() / has_ref.sum(),
         EXPECT["ecb_match_share"], "Wave-1: ~95% of refs")
 
-    add("jobs_rows", len(jobs), note="permits_now first permit 2020+")
-    add("jobs_permit_span_share", (jobs["n_permits"] > 0).mean())
-    add("jobs_signoff_fill_share", jobs["signoff_date"].notna().mean(),
-        EXPECT["signoff_fill_share"], "Wave-1: 64% filled")
-    add("jobs_conversion_relaxed", int(jobs["conversion"].sum()),
-        note="Alt-CO family, 0 existing units, >0 proposed")
-    add("jobs_conversion_strict_ge10", int(jobs["conversion_ge10"].sum()),
-        EXPECT["n_conversion_ge10"], "Wave-1: 630 (proposed>=10)")
-    add("jobs_conversion_office_class", int(jobs["conversion_office"].sum()),
-        note="relaxed + PLUTO bldgclass O/K")
+    add("jobs_rows", len(filings),
+        note="permits_now FILINGS first permitted 2020+ (pre-collapse)")
+    add("jobs_permit_span_share", (filings["n_permits"] > 0).mean(),
+        note="filing level")
+    add("jobs_signoff_fill_share", filings["signoff_date"].notna().mean(),
+        EXPECT["signoff_fill_share"], "Wave-1: 64% filled (filing level)")
+    add("jobs_conversion_relaxed", int(filings["conversion"].sum()),
+        note="filing level: Alt-CO family, 0 existing units, >0 proposed")
+    add("jobs_conversion_strict_ge10", int(filings["conversion_ge10"].sum()),
+        EXPECT["n_conversion_ge10"], "Wave-1: 630 (filing level)")
+    add("jobs_conversion_office_class", int(filings["conversion_office"].sum()),
+        note="filing level: relaxed + PLUTO bldgclass O/K")
+
+    add("projects_rows", len(projects),
+        note="base projects after filing-suffix collapse (Critic B fix)")
+    add("projects_multi_filing_share", (projects["n_filings"] > 1).mean())
+    add("projects_filings_per_project_mean", projects["n_filings"].mean())
+    add("projects_conversion_relaxed", int(projects["conversion"].sum()),
+        note="any filing of the base flags")
+    add("projects_conversion_strict_ge10", int(projects["conversion_ge10"].sum()),
+        note="any filing of the base flags (filing-level count 630)")
+    add("projects_conversion_office_class",
+        int(projects["conversion_office"].sum()),
+        note="any filing of the base flags")
+
+    # Critic B stock diagnostic: filing-level active stock drifts upward
+    # with -S/-P/-Z proliferation; project-level stock is the denominator
+    stock_f = citywide_monthly_stock(filings)
+    stock_p = citywide_monthly_stock(projects)
+    for yr in ("2023", "2025"):
+        add(f"active_stock_monthly_avg_{yr}__filings",
+            stock_f[stock_f.index.str[:4] == yr].mean(),
+            note="pre-fix filing-level denominator, reference only")
+        add(f"active_stock_monthly_avg_{yr}__projects",
+            stock_p[stock_p.index.str[:4] == yr].mean(),
+            note="base projects, citywide incl tract-unmatched")
+    for label, st in (("filings", stock_f), ("projects", stock_p)):
+        m23 = st[st.index.str[:4] == "2023"].mean()
+        m25 = st[st.index.str[:4] == "2025"].mean()
+        add(f"active_stock_chg_pct_2023_2025__{label}",
+            (m25 / m23 - 1) * 100,
+            note="Critic B: filings rise while projects fall")
 
     add("panel_rows", len(panel))
     add("panel_tracts", panel["bct2020"].nunique())
     add("panel_months", panel["month"].nunique())
     add("panel_caller_total", panel["caller_complaints"].sum())
     add("panel_proactive_total", panel["proactive_total"].sum())
-    add("panel_active_job_months", panel["active_jobs"].sum())
+    add("panel_active_job_months", panel["active_jobs"].sum(),
+        note="BASE-PROJECT months since Critic B collapse")
 
     return pd.DataFrame(rows)
 
@@ -457,8 +577,9 @@ def main() -> None:
     ev = stage("events", build_events, conn, pt)
     ev = stage("ecb_link", add_ecb, ev, conn)
     ev = stage("active_permit", add_active_permit, ev, conn)
-    jobs = stage("jobs", build_jobs, conn, pt, pl_class)
-    panel = stage("tract_month", build_tract_month, ev, jobs, pt, units)
+    filings = stage("jobs", build_jobs, conn, pt, pl_class)
+    projects = stage("collapse_projects", collapse_to_projects, filings)
+    panel = stage("tract_month", build_tract_month, ev, projects, pt, units)
     conn.close()
 
     event_cols = ["complaint_number", "received_date", "month",
@@ -466,24 +587,25 @@ def main() -> None:
                   "bin", "bbl", "bct2020", "nta", "priority", "assigned_to",
                   "disposition_code", "outcome", "ecb_number", "ecb_severity",
                   "ecb_penalty", "active_permit", "active_job_filing_number",
-                  "active_permit_cost"]
-    job_cols = ["job_filing_number", "job_type", "building_type",
-                "initial_cost", "total_construction_floor_area",
-                "existing_dwelling_units", "proposed_dwelling_units",
-                "bin", "bbl", "bct2020", "bldgclass", "filing_date",
-                "first_permit_date", "signoff_date", "first_issued",
-                "last_expired", "n_permits", "active_start", "active_end",
-                "active_start_month", "active_end_month", "conversion",
-                "conversion_ge10", "conversion_office"]
+                  "active_job_key", "active_permit_cost"]
+    job_cols = ["job_key", "n_filings", "largest_cost_filing", "job_type",
+                "building_type", "initial_cost", "initial_cost_sum",
+                "total_construction_floor_area", "existing_dwelling_units",
+                "proposed_dwelling_units", "bin", "bbl", "bct2020",
+                "bldgclass", "filing_date", "first_permit_date",
+                "signoff_date", "first_issued", "last_expired", "n_permits",
+                "active_start", "active_end", "active_start_month",
+                "active_end_month", "conversion", "conversion_ge10",
+                "conversion_office"]
 
     t = time.time()
     p1 = save_frame(ev[event_cols], "proactive_events")
-    p2 = save_frame(jobs[job_cols], "jobs")
+    p2 = save_frame(projects[job_cols], "jobs")
     p3 = os.path.join(OUT_DIR, "tract_month.csv.gz")
     panel.to_csv(p3, index=False, compression="gzip")
     timings["write_outputs"] = time.time() - t
 
-    summary = build_summary(ev, jobs, panel)
+    summary = build_summary(ev, filings, projects, panel)
     p4 = os.path.join(RISK_DIR, "proactive_spine_summary.csv")
     summary.to_csv(p4, index=False)
 

@@ -1,0 +1,10 @@
+term,value,n_tracts,note,window
+spearman_min_lots_20,0.8240108050257023,2087,"panel A vs panel B, tracts with >= 20 lots in both denominators; pearson=0.612",2020-01..2026-05
+spearman_min_lots_50,0.8054454750352159,1976,"panel A vs panel B, tracts with >= 50 lots in both denominators; pearson=0.707",2020-01..2026-05
+spearman_min_lots_100,0.7786361451443238,1824,"panel A vs panel B, tracts with >= 100 lots in both denominators; pearson=0.739",2020-01..2026-05
+spearman_min_lots_200,0.7013048688351781,1458,"panel A vs panel B, tracts with >= 200 lots in both denominators; pearson=0.763",2020-01..2026-05
+spearman_min_lots_400,0.5422480270420742,714,"panel A vs panel B, tracts with >= 400 lots in both denominators; pearson=0.627",2020-01..2026-05
+spearman_panelA_vs_risk_stock,0.8156979185881722,1976,"panel A vs top-decile-risk lots per 1,000 scored lots INCLUDING swept ones (the plain risk-stock map)",2020-01..2026-05
+spearman_panelB_vs_risk_stock,0.9990096986365338,1976,"panel B is rank-identical to the plain risk-stock map, so the A-B correlation cannot measure sweep placement; hang within-neighborhood claims on the within-block selection results (sweep_structure) instead",2020-01..2026-05
+spearman_panelA_vs_tract_size,-0.6734417411831375,1976,"both panels share panel-lot denominators; small tracts run hot on both, inflating the raw correlation",2020-01..2026-05
+partial_rank_corr_given_log_tract_size,0.6263215106097851,1976,rank correlation of the two panels after partialling log panel lots out of both,2020-01..2026-05

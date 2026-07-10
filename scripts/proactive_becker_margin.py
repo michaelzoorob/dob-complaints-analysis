@@ -21,9 +21,31 @@ marginal violation is? Two exercises:
     2010-19 violation history, tract poverty. NO 2020+ outcomes enter as
     regressors. Score all panel lots; compare mean predicted risk of lots
     that received a 7G sweep vs the equal-count highest-scoring
-    never-swept lots; translate the gap into extra violations per 1,000
-    inspections. In-sample calibration by predicted-risk decile is
-    reported so the translation is honest.
+    never-swept lots. The headline contrast is a PREVALENCE gap: the
+    difference in predicted 77-month any-violation prevalence per 1,000
+    LOTS, not a per-visit find rate. In-sample calibration by
+    predicted-risk decile is reported so the translation is honest.
+
+(b') Audit blocks appended to proactive_reallocation.csv (adversarial
+    review 2026-07-10, critic D; constructions mirror
+    scripts/audit/critic_proactive_D_becker.py):
+      realized_basis   — the same swap on realized 2020-26 rates for BOTH
+                         groups (the logit underpredicts the swept
+                         subgroup, so the predicted-basis gap overstates);
+      sweep_findable   — outcomes a sweep could actually write (any ECB or
+                         union construction family; strictest field-only
+                         variant SIGN FLIPS), original top set and a refit
+                         logit with its own AUC;
+      per_visit        — what visits actually find per inspection: 7G
+                         yield at top-decile-risk lots vs its own lots,
+                         8A / all-discretionary yields at the flagged
+                         lots, and the implied program-mix cap;
+      framing          — never-swept base rates (top-decile over-coverage)
+                         and the 2019 7G cohort invisible to the 2020+
+                         spine;
+      out_of_time      — a 2000-09-history -> 2010-19-outcome logit whose
+                         top never-swept picks are checked against
+                         realized 2020-26 rates (no 2020s data anywhere).
 
 Honest caveats carried in the outputs:
   - the training outcome is realized enforcement, not latent risk; lots
@@ -66,6 +88,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
 import dob_ledger
+from analysis_config import make_bbl
 
 SPINE = config.DATA_DIR / "analysis" / "proactive" / "proactive_events.csv.gz"
 PANEL = config.DATA_DIR / "analysis" / "property_risk_panel_v2.csv.gz"
@@ -118,6 +141,41 @@ def clean_tidy(model, name, outcome, n=None):
     t["outcome"] = outcome
     t["n"] = model._N if n is None else n
     return t
+
+
+# ── shared model pieces (used by part (b) and the audit blocks) ─────────
+
+ECB_DEVICE_TYPES = {"Elevators", "Boilers"}  # periodic device streams in ECB
+
+
+def design_matrix(df: pd.DataFrame,
+                  hist_cols=("log1p_ecb_hist", "log1p_dobviol_hist",
+                             "any_prior_viol")) -> pd.DataFrame:
+    """Part-(b) logit design matrix. hist_cols is swappable so the
+    out-of-time variant (2000-09 history) reuses the identical layout."""
+    return pd.concat([
+        pd.DataFrame({"const": 1.0}, index=df.index),
+        df[["era_pre1940", "era_4079", "era_8099", "era_unknown",
+            "log_bldgarea", "no_bldgarea", *hist_cols,
+            "tract_poverty"]].astype(float),
+        pd.get_dummies(df["size_bin"], prefix="size", dtype=float).drop(
+            columns=["size_1"]),
+        pd.get_dummies(df["class_grp"], prefix="cls", dtype=float).drop(
+            columns=["cls_A"]),
+    ], axis=1)
+
+
+def fit_logit(X: pd.DataFrame, y) -> np.ndarray:
+    m = sm.GLM(np.asarray(y, float), X, family=sm.families.Binomial()).fit()
+    return np.asarray(m.predict(X))
+
+
+def rank_auc(p, y) -> float:
+    """Rank-based AUC (no sklearn in this venv)."""
+    r = pd.Series(p).rank().to_numpy()
+    y = np.asarray(y, float)
+    n1, n_all = y.sum(), len(y)
+    return float((r[y == 1].sum() - n1 * (n1 + 1) / 2) / (n1 * (n_all - n1)))
 
 
 # ── (a) hit rate by tract-intensity decile ──────────────────────────────
@@ -209,6 +267,15 @@ def part_a(ev: pd.DataFrame, tr: pd.DataFrame, acct: dict) -> pd.DataFrame:
         rows += clean_tidy(m, f"lpm_fe_linear__{pfx}",
                            out_name + ", per decile").to_dict("records")
 
+    # 8A-composition note (critic D): the top-decile dip in the pooled
+    # slope is 8A mix, not crowding — excluding 8A the gradient is ~flat
+    sub = ev[ev["category_prefix"] != "8A"]
+    m = pf.feols("hit100 ~ decile_num | cat_year", data=sub, vcov=vcov)
+    rows += clean_tidy(
+        m, "lpm_fe_linear__excl_8A",
+        out_name + ", per decile (8A-composition check: the pooled "
+        "top-decile dip is 8A share, not crowding)").to_dict("records")
+
     # sample accounting so the post can trace every count
     for k, v in acct.items():
         rows.append({"term": k, "estimate": v, "model": "sample",
@@ -260,26 +327,12 @@ def load_panel_scored():
     df = df[df["tract_poverty"].notna() & df["size_bin"].notna()].copy()
     print(f"  panel scored sample {len(df):,} of {n0:,} lots")
 
-    X = pd.concat([
-        pd.DataFrame({"const": 1.0}, index=df.index),
-        df[["era_pre1940", "era_4079", "era_8099", "era_unknown",
-            "log_bldgarea", "no_bldgarea",
-            "log1p_ecb_hist", "log1p_dobviol_hist", "any_prior_viol",
-            "tract_poverty"]].astype(float),
-        pd.get_dummies(df["size_bin"], prefix="size", dtype=float).drop(
-            columns=["size_1"]),
-        pd.get_dummies(df["class_grp"], prefix="cls", dtype=float).drop(
-            columns=["cls_A"]),
-    ], axis=1)
+    X = design_matrix(df)
     y = df["any_viol_2020on"].to_numpy(float)
-    model = sm.GLM(y, X, family=sm.families.Binomial()).fit()
-    df["p_hat"] = np.asarray(model.predict(X))
+    df["p_hat"] = fit_logit(X, y)
     df["p100"] = df["p_hat"] * 100.0
 
-    # rank-based AUC (no sklearn in this venv)
-    r = pd.Series(df["p_hat"]).rank().to_numpy()
-    n1, n_all = y.sum(), len(y)
-    auc = (r[y == 1].sum() - n1 * (n1 + 1) / 2) / (n1 * (n_all - n1))
+    auc = rank_auc(df["p_hat"], y)
     print(f"  logit params {X.shape[1]}, in-sample AUC {auc:.3f}, "
           f"base rate {y.mean():.4f}")
     return df, auc, X.shape[1]
@@ -324,10 +377,15 @@ def part_b(df: pd.DataFrame, auc: float, k_params: int):
     add("gap_pp_se", gap["std_error"])
     add("gap_pp_ci_lo", gap["25pct"])
     add("gap_pp_ci_hi", gap["975pct"])
-    add("extra_viol_per_1000", gap["estimate"] * 10,
-        "gap x 10 = extra violations per 1,000 inspections")
-    add("extra_viol_per_1000_ci_lo", gap["25pct"] * 10)
-    add("extra_viol_per_1000_ci_hi", gap["975pct"] * 10)
+    add("prevalence_gap_per_1000_lots", gap["estimate"] * 10,
+        "RELABELED (was extra_viol_per_1000): predicted 77-month "
+        "any-violation prevalence gap x 10, per 1,000 LOTS; a "
+        "predicted-vs-predicted prevalence contrast, NOT a per-visit find "
+        "rate; see realized_basis and per_visit blocks for quotable margins")
+    add("prevalence_gap_per_1000_lots_ci_lo", gap["25pct"] * 10)
+    add("prevalence_gap_per_1000_lots_ci_hi", gap["975pct"] * 10,
+        "CI reflects sampling error of the prevalence contrast only, not "
+        "the modeling choices the audit blocks vary")
     add("actual_rate_swept_pct", swept["any_viol_2020on"].mean() * 100,
         "realized 2020+ rate; partly caused by the sweeps themselves")
     add("actual_rate_top_unswept_pct", top["any_viol_2020on"].mean() * 100,
@@ -361,9 +419,210 @@ def part_b(df: pd.DataFrame, auc: float, k_params: int):
                      "actual_rate_pct": r["actual_rate_pct"],
                      "n": int(r["n"]),
                      "note": "value = mean predicted risk (pct)"})
+
+    rows += audit_rows(df, swept, top, n_swept)
+
     res = pd.DataFrame(rows)
     res["window"] = WINDOW
     return res, swept["p100"].mean(), top["p100"].mean(), gap
+
+
+def audit_rows(df: pd.DataFrame, swept: pd.DataFrame, top: pd.DataFrame,
+               n_swept: int) -> list[dict]:
+    """Critic-D audit blocks (adversarial review 2026-07-10). Constructions
+    mirror scripts/audit/critic_proactive_D_becker.py; requires df to carry
+    p_hat, cal_decile and swept7g already (part (b) sets them)."""
+    rows = []
+
+    def add(block, term, value, note=""):
+        rows.append({"block": block, "term": term, "value": float(value),
+                     "note": note})
+
+    conn = sqlite3.connect(str(config.DB_PATH), timeout=60)
+    conn.execute("PRAGMA busy_timeout=60000;")
+
+    # ── realized_basis: the same swap using realized 2020-26 rates for
+    #    BOTH groups (the logit underpredicts the swept subgroup, which is
+    #    selected on DOB-side unobservables, so the predicted-vs-predicted
+    #    prevalence gap overstates the realized one) ────────────────────
+    real_swept = swept["any_viol_2020on"].mean() * 100
+    real_top = top["any_viol_2020on"].mean() * 100
+    add("realized_basis", "realized_gap_per_1000_lots",
+        (real_top - real_swept) * 10,
+        f"realized-vs-realized: {real_top:.1f} minus {real_swept:.1f} "
+        "(actual_rate_* rows) x 10; still a 77-month prevalence contrast "
+        "per 1,000 lots, and swept-lot paper partly sweep-caused")
+    print(f"  realized-vs-realized gap {(real_top - real_swept) * 10:,.0f} "
+          f"per 1,000 lots ({real_top:.1f} vs {real_swept:.1f})")
+
+    # ── sweep_findable: strip the periodic/administrative streams the
+    #    union outcome bundles (boiler/elevator/facade/energy/gas fire
+    #    without any sweep). v2 = any inspector-written paper (any ECB or
+    #    union construction family); v3 = strictly field paper (ECB excl.
+    #    elevator/boiler device types, or union construction) ───────────
+    ecb = pd.read_sql_query("""
+        SELECT ecb_violation_number AS num, boro, block, lot, violation_type
+        FROM ecb_violations
+        WHERE length(issue_date) >= 8
+          AND substr(issue_date,1,4) BETWEEN '2020' AND '2026'""", conn)
+    ecb["bbl_key"] = [make_bbl(b, bl, lt) for b, bl, lt
+                      in zip(ecb["boro"], ecb["block"], ecb["lot"])]
+    ecb = ecb[ecb["bbl_key"] != ""]
+    ecb_flags = (ecb.assign(field=~ecb["violation_type"].isin(ECB_DEVICE_TYPES))
+                 .groupby("bbl_key")
+                 .agg(ecb_any=("num", "size"), ecb_field=("field", "max")))
+    ecb_flags["ecb_any"] = 1
+    ecb_flags.index = ecb_flags.index.astype(str)
+
+    u = dob_ledger.union_frame(conn)
+    u = u[(u["year"] >= 2020) & (u["year"] <= 2026)]
+    constr = (u["family"] == "constr").groupby(u["bbl_key"].astype(str)).max()
+
+    df["_ecb_any"] = df["bbl_key"].map(ecb_flags["ecb_any"]).fillna(0).astype(int)
+    df["_ecb_field"] = df["bbl_key"].map(ecb_flags["ecb_field"]).fillna(0).astype(int)
+    df["_constr"] = df["bbl_key"].map(constr).fillna(False).astype(int)
+    df["viol_v2"] = ((df["_ecb_any"] == 1) | (df["_constr"] == 1)).astype(int)
+    df["viol_v3"] = ((df["_ecb_field"] == 1) | (df["_constr"] == 1)).astype(int)
+
+    sw, tp = df.loc[swept.index], df.loc[top.index]
+    v2_sw, v2_tp = sw["viol_v2"].mean() * 100, tp["viol_v2"].mean() * 100
+    v3_sw, v3_tp = sw["viol_v3"].mean() * 100, tp["viol_v3"].mean() * 100
+    add("sweep_findable", "sweep_findable_rate_swept_pct", v2_sw,
+        "any 2020-26 ECB citation or union construction-family violation")
+    add("sweep_findable", "sweep_findable_rate_top_unswept_pct", v2_tp,
+        "original top set")
+    add("sweep_findable", "sweep_findable_gap_per_1000", (v2_tp - v2_sw) * 10,
+        "periodic boiler/elevator/facade/energy/gas streams removed from "
+        "the outcome; original top set")
+    X2 = design_matrix(df)
+    p2 = fit_logit(X2, df["viol_v2"])
+    auc2 = rank_auc(p2, df["viol_v2"])
+    df["_p_hat_v2"] = p2
+    top2 = df[df["swept7g"] == 0].nlargest(n_swept, "_p_hat_v2")
+    add("sweep_findable", "sweep_findable_auc_refit", auc2,
+        "logit refit on the sweep-findable outcome, same design matrix")
+    add("sweep_findable", "sweep_findable_gap_refit_per_1000",
+        (top2["viol_v2"].mean() * 100 - v2_sw) * 10,
+        f"top set re-picked by the refit model; its realized sweep-findable "
+        f"rate is {top2['viol_v2'].mean() * 100:.1f}")
+    add("sweep_findable", "field_only_rate_swept_pct", v3_sw,
+        "ECB excl. elevator/boiler device types, or union construction")
+    add("sweep_findable", "field_only_rate_top_unswept_pct", v3_tp,
+        "original top set")
+    add("sweep_findable", "field_only_gap_per_1000", (v3_tp - v3_sw) * 10,
+        "SIGN FLIPS: on the strictest field-only outcome the swept lots "
+        "out-realize the model's top never-swept picks")
+    print(f"  sweep-findable gap {(v2_tp - v2_sw) * 10:,.0f} (refit "
+          f"{(top2['viol_v2'].mean() * 100 - v2_sw) * 10:,.0f}, AUC {auc2:.3f}); "
+          f"field-only {(v3_tp - v3_sw) * 10:,.0f}")
+
+    # ── per_visit: what inspections actually find, per visit ────────────
+    evd = pd.read_csv(SPINE, usecols=["category_prefix", "family", "agency",
+                                      "outcome", "bbl"], dtype={"bbl": str})
+    evd = evd[(evd["agency"] == 1) & (evd["family"] == "discretionary_field")
+              & (evd["outcome"] != "pending")].copy()
+    evd["hit"] = (evd["outcome"] == "violation").astype(float)
+    evd = evd.merge(df[["bbl_key", "cal_decile"]], left_on="bbl",
+                    right_on="bbl_key", how="left")
+    m7g = evd[evd["category_prefix"] == "7G"]
+    own = m7g[m7g["cal_decile"].notna()]
+    d10 = m7g[m7g["cal_decile"] == 10]
+    y_own = own["hit"].mean() * 100
+    y_d10 = d10["hit"].mean() * 100
+    at_top = evd[evd["bbl"].isin(set(top["bbl_key"]))]
+    m8a = at_top[at_top["category_prefix"] == "8A"]
+    y_alldisc = at_top["hit"].mean() * 100
+    y_8a = m8a["hit"].mean() * 100
+    add("per_visit", "sweep_yield_top_decile_pct", y_d10,
+        f"7G per-visit violation yield at top-decile-risk lots, "
+        f"n={len(d10):,} visits")
+    add("per_visit", "sweep_yield_own_lots_pct", y_own,
+        f"7G per-visit yield at the panel lots it actually swept, "
+        f"n={len(own):,} visits")
+    add("per_visit", "sweep_yield_gap_per_1000", (y_d10 - y_own) * 10,
+        "re-aiming sweeps at top-decile lots buys ~nothing per visit")
+    add("per_visit", "compliance_8a_yield_at_flagged_pct", y_8a,
+        f"8A per-visit yield at the {n_swept:,} flagged (top never-swept) "
+        f"lots, n={len(m8a):,} visits")
+    add("per_visit", "alldisc_yield_at_flagged_pct", y_alldisc,
+        f"all discretionary programs at the flagged lots, n={len(at_top):,} "
+        f"non-7G visits")
+    add("per_visit", "program_mix_cap_per_1000", (y_alldisc - y_own) * 10,
+        "all-discretionary yield at flagged lots minus 7G yield at its own "
+        "lots, x10: the most a PROGRAM change (8A/LL79-style visits, not a "
+        "sweep re-aim) could buy per 1,000 visits")
+    print(f"  per-visit: 7G d10 {y_d10:.1f} vs own {y_own:.1f}; at flagged "
+          f"lots 8A {y_8a:.1f} / all-disc {y_alldisc:.1f} -> program-mix cap "
+          f"{(y_alldisc - y_own) * 10:,.0f} per 1,000")
+
+    # ── framing: base rates and the 2019 sweep cohort ────────────────────
+    add("framing", "panel_never_swept_pct", (1 - df["swept7g"].mean()) * 100,
+        "share of ALL scored panel lots with no 2020+ 7G sweep; "
+        "never-swept is the base condition, not neglect")
+    cut = df["p_hat"].quantile(0.90)
+    hr = df[df["p_hat"] >= cut]
+    add("framing", "top_decile_never_swept_pct",
+        (1 - hr["swept7g"].mean()) * 100,
+        f"n={len(hr):,} top-decile-risk lots")
+    add("framing", "sweep_overcoverage_top_decile",
+        hr["swept7g"].mean() / df["swept7g"].mean(),
+        "P(swept | top decile) / P(swept): sweeps OVER-cover the top "
+        "decile relative to the panel")
+    od = pd.read_sql_query("""
+        SELECT bin, substr(date_entered,7,4) AS yr FROM open_data
+        WHERE complaint_category = '7G'""", conn)
+    pre = od[od["yr"] < "2020"]
+    bb = pd.read_sql_query("SELECT bin, bbl_key FROM bin_bbl_all", conn)
+    pre_bbls = set(pre.merge(bb, on="bin", how="inner")["bbl_key"].astype(str))
+    add("framing", "n_7g_events_2019", len(pre),
+        "7G category exists only since 2019; these precede the 2020+ "
+        "events spine")
+    add("framing", "top_unswept_with_2019_sweep",
+        int(top["bbl_key"].isin(pre_bbls).sum()),
+        f"of the {n_swept:,} top never-swept lots, had a 2019 7G sweep "
+        "invisible to the 2020+ spine; say 'in the 2020-26 window', "
+        "not 'no sweep ever'")
+    print(f"  framing: never-swept {100 * (1 - df['swept7g'].mean()):.1f}% of "
+          f"all lots, top decile {100 * (1 - hr['swept7g'].mean()):.1f}%, "
+          f"over-coverage {hr['swept7g'].mean() / df['swept7g'].mean():.1f}x; "
+          f"2019 sweeps {len(pre):,}, hit {int(top['bbl_key'].isin(pre_bbls).sum())} "
+          f"of the top {n_swept:,}")
+
+    # ── out_of_time: 2000-09 history -> 2010-19 outcome; the top picks of
+    #    a model that never saw any 2020s data, checked against realized
+    #    2020-26 rates ────────────────────────────────────────────────────
+    ecb_old = pd.read_sql_query("""
+        SELECT boro, block, lot FROM ecb_violations
+        WHERE length(issue_date) >= 8
+          AND substr(issue_date,1,4) BETWEEN '2000' AND '2009'""", conn)
+    ecb_old["bbl_key"] = [make_bbl(b, bl, lt) for b, bl, lt
+                          in zip(ecb_old["boro"], ecb_old["block"],
+                                 ecb_old["lot"])]
+    ecb00 = ecb_old[ecb_old["bbl_key"] != ""].groupby("bbl_key").size()
+    dob00 = dob_ledger.counts_by_bbl(conn, 2000, 2009, "n00")
+    df["_log1p_ecb_hist00"] = np.log1p(df["bbl_key"].map(ecb00).fillna(0))
+    df["_log1p_dobviol_hist00"] = np.log1p(df["bbl_key"].map(dob00).fillna(0))
+    df["_any_prior00"] = ((df["_log1p_ecb_hist00"] > 0)
+                          | (df["_log1p_dobviol_hist00"] > 0)).astype(int)
+    Xo = design_matrix(df, hist_cols=("_log1p_ecb_hist00",
+                                      "_log1p_dobviol_hist00",
+                                      "_any_prior00"))
+    po = fit_logit(Xo, df["any_prior_viol"])  # outcome: any 2010-19 violation
+    auc_o = rank_auc(po, df["any_prior_viol"])
+    df["_p_oot"] = po
+    top_o = df[df["swept7g"] == 0].nlargest(n_swept, "_p_oot")
+    add("out_of_time", "oot_auc_2000s_to_2010s", auc_o,
+        "logit of any 2010-19 violation on 2000-09 history + slow-moving "
+        "traits; no 2020s data anywhere in fit or selection")
+    add("out_of_time", "oot_top_realized_any_pct",
+        top_o["any_viol_2020on"].mean() * 100,
+        f"realized 2020-26 any-violation rate of that model's top "
+        f"{n_swept:,} never-swept picks")
+    print(f"  out-of-time: AUC {auc_o:.3f}; top picks realize "
+          f"{top_o['any_viol_2020on'].mean() * 100:.1f}% in 2020-26")
+
+    conn.close()
+    return rows
 
 
 # ── figure ───────────────────────────────────────────────────────────────
@@ -483,6 +742,9 @@ def main():
     cal = res_b[res_b["block"] == "calibration"]
     print(cal[["term", "value", "actual_rate_pct", "n"]].round(2)
           .to_string(index=False))
+    aud = res_b[~res_b["block"].isin(["headline", "calibration"])]
+    print("\naudit blocks (critic D):")
+    print(aud[["block", "term", "value"]].round(3).to_string(index=False))
 
     print("[4/4] figure")
     make_figure(res_a, swept_p, top_p, gap)
@@ -498,17 +760,26 @@ def main():
           f"intensity ({slope['estimate']:+.2f} pp per decile, "
           f"95% CI {slope['25pct']:+.2f}..{slope['975pct']:+.2f}); "
           f"flat or rising = not yield-equalized.")
+    aval = lambda term: res_b.loc[res_b["term"] == term, "value"].iat[0]
     print(f"Reallocation: swapping the {int(hd.loc[hd.term == 'n_swept_panel_lots', 'value'].iat[0]):,} "
           f"swept residential lots for the same count of highest-predicted-risk "
-          f"never-swept lots raises predicted yield "
-          f"{gap['estimate']:.1f} pp = {gap['estimate'] * 10:,.0f} extra "
-          f"violations per 1,000 inspections "
-          f"(95% CI {gap['25pct'] * 10:,.0f}..{gap['975pct'] * 10:,.0f}).")
-    print("Caveat: treat the reallocation gain as an upper bound. The model's "
-          "top lots are large buildings (see units_median_top_unswept) whose "
-          "77-month any-violation probability nears 1 partly through the "
-          "statutory boiler/elevator streams in the union ledger, and the "
-          "outcome measures realized enforcement, not latent risk.")
+          f"never-swept lots raises predicted 77-month any-violation "
+          f"prevalence {gap['estimate']:.1f} pp = {gap['estimate'] * 10:,.0f} "
+          f"per 1,000 LOTS "
+          f"(95% CI {gap['25pct'] * 10:,.0f}..{gap['975pct'] * 10:,.0f}) — "
+          f"a prevalence gap, NOT a per-visit find rate.")
+    print(f"Quotable margins (audit blocks): realized-vs-realized "
+          f"{aval('realized_gap_per_1000_lots'):,.0f} per 1,000 lots; "
+          f"sweep-findable {aval('sweep_findable_gap_per_1000'):,.0f} "
+          f"(refit {aval('sweep_findable_gap_refit_per_1000'):,.0f}); "
+          f"field-only {aval('field_only_gap_per_1000'):,.0f} (sign flip); "
+          f"per-visit sweep re-aim {aval('sweep_yield_gap_per_1000'):,.0f}; "
+          f"program-mix cap {aval('program_mix_cap_per_1000'):,.0f}.")
+    print("Caveat: the outcome measures realized enforcement, not latent "
+          "risk; the model's top lots are large buildings (see "
+          "units_median_top_unswept) whose 77-month any-violation "
+          "probability nears 1 partly through the statutory "
+          "boiler/elevator streams in the union ledger.")
 
 
 if __name__ == "__main__":

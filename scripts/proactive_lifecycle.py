@@ -105,7 +105,7 @@ def month_idx(ts: pd.Series) -> pd.Series:
 
 def load_jobs() -> pd.DataFrame:
     j = pd.read_csv(PRO / "jobs.csv.gz",
-                    usecols=["job_filing_number", "job_type", "bbl",
+                    usecols=["job_key", "job_type", "bbl",
                              "active_start", "active_end", "signoff_date"],
                     dtype={"bbl": "str"})
     n0 = len(j)
