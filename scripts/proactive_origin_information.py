@@ -332,7 +332,8 @@ def make_figure(res: pd.DataFrame, raw: pd.DataFrame):
             f"{rr04['ecb_caller_pct']:.1f}% when 311-driven (raw); "
             "a caller's late-night noise report almost never becomes paper",
             transform=ax.transAxes, fontsize=9.3, color=INK2, style="italic",
-            ha="left", va="bottom")
+            ha="left", va="bottom",
+            bbox=dict(facecolor=SURFACE, edgecolor="none", pad=2.5))
 
     fig.savefig(ART / "proactive_origin_information.png", bbox_inches="tight")
     plt.close(fig)

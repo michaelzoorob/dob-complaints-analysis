@@ -13,8 +13,10 @@ the pre-2020 risk score from proactive_becker_margin.load_panel_scored()
 and never-swept = no agency 7G event at the BBL in the events spine.
 Sequential red (the house violation color).
 
-Both panels mask tracts with fewer than 200 lots in their denominator,
-mirroring the MIN_UNITS masking in make_complaint_maps.py.
+Both panels mask tracts with fewer than 50 lots in their denominator
+(looser than the 200-unit masking in make_complaint_maps.py: the 200-lot
+rule grayed out most of Manhattan, whose tracts hold few residential
+lots, and Manhattan is the story's core geography).
 
 Inputs : data/analysis/proactive/proactive_events.csv.gz
          data/analysis/property_risk_panel_v2.csv.gz
@@ -64,7 +66,8 @@ plt.rcParams.update({
     "text.color": INK, "figure.facecolor": SURFACE, "savefig.facecolor": SURFACE,
 })
 
-MIN_LOTS = 200  # mask tracts with fewer panel lots, per the house maps
+MIN_LOTS = 50   # mask tracts with fewer panel lots (200 grayed out most of
+                # Manhattan, where tracts hold few residential lots)
 
 BLUE_CMAP = LinearSegmentedColormap.from_list(
     "seqblue", ["#eef3fb", "#9cc0ea", BLUE, "#123a6b"])
@@ -201,13 +204,13 @@ def main():
         fig, axes[0], gdf, "disc_per_1000", "ok_a", BLUE_CMAP, vmax_a,
         "Where DOB's discretionary inspections go",
         "agency-initiated discretionary inspections per 1,000 residential lots "
-        "· 2020–May 2026 · gray = under 200 lots",
+        f"· 2020–May 2026 · gray = under {MIN_LOTS} lots",
         "inspections per 1,000 residential lots (top 2% capped)")
     draw_panel(
         fig, axes[1], gdf, "hr_never_swept_per_1000", "ok_b", RED_CMAP, vmax_b,
         "High-risk buildings the sweeps never reached",
         "never-swept lots in the top decile of pre-2020 predicted risk, "
-        "per 1,000 scored lots · gray = under 200 lots",
+        f"per 1,000 scored lots · gray = under {MIN_LOTS} lots",
         "never-swept high-risk lots per 1,000 lots (top 2% capped)")
     fig.tight_layout()
     fig.savefig(ART / "proactive_map.png", bbox_inches="tight")

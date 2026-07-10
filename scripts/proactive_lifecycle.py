@@ -263,12 +263,16 @@ def make_figure(curves: dict, summaries: dict, n_jobs: int):
                     color=color if color != ZERO else MUTED)
 
     ax.set_xlim(-0.6, K_MAX + 0.6)
-    ax.set_ylim(0, None)
+    # headroom above the tallest CI so the legend sits in empty space
+    ymax = max(curves[name]["ci_high_per100"].max() for name, *_ in spec)
+    ax.set_ylim(0, ymax * 1.15)
     ax.set_xticks(range(0, K_MAX + 1, 6))
     ax.tick_params(labelsize=9)
     ax.set_xlabel("months since the job's first permit", fontsize=9.5)
     ax.set_ylabel("events at the job's lot per 100 active jobs", fontsize=9.5)
-    ax.legend(loc="upper right", frameon=False, fontsize=9)
+    # opaque surface frame: gridlines must not strike the legend text
+    ax.legend(loc="upper right", frameon=True, fontsize=9,
+              facecolor=SURFACE, edgecolor="none", framealpha=1.0)
 
     mon, inc = summaries["monitoring"], summaries["incidents"]
     stat = summaries["statutory"]

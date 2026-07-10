@@ -417,9 +417,12 @@ def make_figure(res: pd.DataFrame):
                 fontsize=10, color=SURFACE, fontweight="bold")
         ax.text(w + c / 2, y, f"mix\n+{c:.1f}pp", ha="center", va="center",
                 fontsize=10, color=SURFACE, fontweight="bold")
+        # surface bboxes: the x-gridlines run through these labels otherwise
         ax.text(w + c + 0.25, y, f"+{w + c:.1f}pp total", va="center",
-                fontsize=10.5, color=INK)
-        ax.text(-0.25, y + 0.37, lab, fontsize=10.5, color=INK, ha="left")
+                fontsize=10.5, color=INK,
+                bbox=dict(facecolor=SURFACE, edgecolor="none", pad=1.5))
+        ax.text(-0.25, y + 0.37, lab, fontsize=10.5, color=INK, ha="left",
+                bbox=dict(facecolor=SURFACE, edgecolor="none", pad=1.5))
     ax.set_xlim(-0.4, 18)
     ax.set_ylim(-0.55, 1.75)
     ax.set_yticks([])
@@ -447,7 +450,8 @@ def make_figure(res: pd.DataFrame):
                     markersize=4.5, elinewidth=1.0, capsize=2, alpha=0.95)
         last = sub.iloc[-1]
         ax.text(2026.15, last["estimate"], pfx, fontsize=10, color=colors[pfx],
-                va="center", fontweight="bold")
+                va="center", fontweight="bold",
+                bbox=dict(facecolor=SURFACE, edgecolor="none", pad=1.0))
     style_ax(ax)
     ax.set_xticks(xs)
     ax.set_xticklabels([str(y) for y in xs[:-1]] + ["2026\nJan–May"],
