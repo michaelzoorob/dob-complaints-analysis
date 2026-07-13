@@ -27,5 +27,9 @@ tracts_with_200plus_units,2206.0
 tract_per100_p90,32.33
 tract_per100_p10,8.71
 tract_p90_p10_ratio,3.71
+viol_per100_substantive_owner_occupied,27.8
+complaints_per100_units_owner_occupied,18.2
+viol_per100_substantive_absentee,32.4
+complaints_per100_units_absentee,17.1
 db_gz_gib,2.76
 db_gib,8.12

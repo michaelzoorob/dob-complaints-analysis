@@ -112,6 +112,17 @@ def main() -> None:
     add("tract_p90_p10_ratio",
         round(np.percentile(tr.per100, 90) / np.percentile(tr.per100, 10), 2))
 
+    # raw per-inspection citation rates and complaint rates by owner-occupancy
+    po = pd.read_csv(config.DATA_DIR / "analysis" / "property_risk_panel_v2.csv.gz",
+                     usecols=["owner_occ_star", "n_viol_disp", "n_substantive",
+                              "n_complaints", "unitsres"])
+    for flag, lab in [(1, "owner_occupied"), (0, "absentee")]:
+        g = po[po.owner_occ_star == flag]
+        add(f"viol_per100_substantive_{lab}",
+            round(g.n_viol_disp.sum() / g.n_substantive.sum() * 100, 1))
+        add(f"complaints_per100_units_{lab}",
+            round(g.n_complaints.sum() / g.unitsres.sum() * 100, 1))
+
     # database snapshot sizes
     gz = config.DATA_DIR / "dob_complaints.db.gz"
     if gz.exists():
