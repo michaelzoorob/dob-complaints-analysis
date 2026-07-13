@@ -37,6 +37,7 @@ pyfixest==0.60.0
 pandas==3.0.0
 numpy==2.3.5
 scipy==1.17.0
+statsmodels==0.14.6
 """
 
 HEADER = f"""# Reproducible results: 780,000 building inspections
@@ -316,26 +317,59 @@ print(f"RESULT ratio: {p90/p10:.1f}x")
 ''')
 
 sec("Observed to expected complaints by tract",
-    "The residual map fits a building-characteristics Poisson with no geographic "
-    "terms, then maps observed / expected complaints per tract "
-    "(`make_complaint_maps.py`). Here is the spread of that ratio, which the map "
-    "colors, and its extremes.",
+    "The residual map (`make_complaint_maps.py`) fits a building-characteristics "
+    "Poisson with no geographic terms, then maps observed / expected complaints per "
+    "tract. This cell refits that exact model and lists the tracts and neighborhoods "
+    "its extremes name: South Ozone Park tract by tract (hottest first), the 12 "
+    "hottest tracts city-wide, and the quietest neighborhoods. Tract to neighborhood "
+    "(NTA) names come from a committed crosswalk derived from `data/nyct2020.geojson` "
+    "(NYC Dept. of City Planning).",
     r'''
+import statsmodels.api as sm
+# Expectation = the residual map's building-only Poisson (make_complaint_maps.tract_table):
+# the 19 building covariates + log2(units) + exact size-bin dummies. Geography enters
+# nowhere, so observed / expected shows where volume runs above what the stock predicts.
 d = frame.copy()
-m = pf.fepois(f"n_complaints ~ {X} | size_bin", data=d, vcov=VCOV)
-mu = np.asarray(m.predict(), float)                       # fepois predict() = link scale
-if abs(np.nansum(mu) - d.n_complaints.sum()) > 0.5 * d.n_complaints.sum():
-    mu = np.exp(mu)
-mu = mu * d.n_complaints.sum() / np.nansum(mu)            # calibrate expected total to observed
-d["expected"] = mu
-t = d.groupby("bct2020").agg(obs=("n_complaints", "sum"), exp=("expected", "sum"))
-t = t[t.obs >= 20]; t["ratio"] = t.obs / t.exp            # tracts with a stable complaint count
-print("observed / expected complaint ratio across tracts (>=20 complaints):")
-print(t.ratio.quantile([.05, .10, .50, .90, .95]).round(2).to_string())
-nhot = int((t.ratio > 3).sum())
-print(f"\nRESULT hottest tracts run several times their predicted volume "
-      f"({nhot} tracts above 3x, up to {t.ratio.max():.0f}x); the quietest file about "
-      f"{t.ratio.quantile(.05):.2f} to {t.ratio.quantile(.15):.2f} of predicted")
+size_d = pd.get_dummies(d["size_bin"], prefix="sz", drop_first=True).astype(float)
+d["log2_units"] = np.log2(d["unitsres"].clip(lower=1))
+Xd = sm.add_constant(pd.concat([d[BUILDING].astype(float), d[["log2_units"]], size_d], axis=1))
+glm = sm.GLM(d["n_complaints"].astype(float), Xd, family=sm.families.Poisson()).fit()
+d["expected"] = glm.predict(Xd)
+print(f"Poisson fit on {len(d):,} lots; observed {d.n_complaints.sum():,.0f} "
+      f"= expected {d.expected.sum():,.0f} by construction\n")
+
+# Collapse to 2020 census tracts, attach NTA neighborhood names, keep >= 200 resid. units
+xw = committed("tract_nta_crosswalk.csv"); xw["boroct2020"] = xw["boroct2020"].astype(str)
+t = (d.groupby("bct2020").agg(obs=("n_complaints", "sum"), exp=("expected", "sum"),
+                              units=("unitsres", "sum")).reset_index()
+       .merge(xw, left_on="bct2020", right_on="boroct2020", how="left"))
+t = t[t.units >= 200].copy(); t["ratio"] = t.obs / t.exp
+FMT = {"exp": "{:.0f}".format, "ratio": "{:.1f}x".format}
+
+# 1. South Ozone Park -- the illegal-conversion center -- tract by tract, hottest first
+sop = t[t.ntaname.str.contains("Ozone Park", case=False, na=False)].sort_values("ratio", ascending=False)
+print("South Ozone Park / Ozone Park tracts -- observed / expected complaints, hottest first:")
+print(sop[["ntaname", "bct2020", "obs", "exp", "ratio"]].head(15).to_string(index=False, formatters=FMT))
+
+# 2. The 12 hottest tracts city-wide: South Ozone Park on top, then central Bronx and Brooklyn
+print("\n12 hottest tracts city-wide (observed / expected):")
+print(t.nlargest(12, "ratio")[["boroname", "ntaname", "obs", "exp", "ratio"]].to_string(index=False, formatters=FMT))
+
+# 3. The quietest NEIGHBORHOODS (NTA aggregates): Staten Island, SE Queens, Upper East/West Sides
+nta = (t.groupby(["boroname", "ntaname"]).agg(obs=("obs", "sum"), exp=("exp", "sum"))
+        .assign(ratio=lambda x: x.obs / x.exp).reset_index())
+nta = nta[nta.obs >= 100]
+print("\n10 quietest neighborhoods (NTA observed / expected):")
+print(nta.nsmallest(10, "ratio")[["boroname", "ntaname", "obs", "exp", "ratio"]]
+      .to_string(index=False, formatters={"exp": "{:.0f}".format, "ratio": "{:.2f}x".format}))
+
+r = sop.ratio.tolist()
+lau = float(nta.loc[nta.ntaname == "Laurelton", "ratio"].iloc[0])
+ros = float(nta.loc[nta.ntaname == "Rosedale", "ratio"].iloc[0])
+print(f"\nRESULT South Ozone Park's hottest tracts file several times their predicted complaint "
+      f"volume (peak tract {r[0]:.1f}x, then {r[1]:.1f}x, {r[2]:.1f}x, {r[3]:.1f}x); the quiet "
+      f"tract-house neighborhoods above -- Staten Island, and southeast Queens like Laurelton "
+      f"({lau:.2f}) and Rosedale ({ros:.2f}) -- file about one half to two thirds of predicted")
 ''')
 
 sec("Complaint and inspector text coverage",
