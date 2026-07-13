@@ -243,6 +243,18 @@ print(f"RESULT broadest-sweep category ({sweep.name}) ends with no violation: {s
 c.sort_values("noviol", ascending=False).head(4)
 ''')
 
+sec("After hours construction outcomes",
+    "Outcome mix and inspection timing for after-hours construction complaints "
+    "(category 04): no-violation and violation shares, same-day inspection rate, and "
+    "median days to inspection (`post0_descriptive_stats.py`).",
+    r'''
+d = committed("post0_descriptive_stats.csv").set_index("metric")["value"].astype(float)
+print(f"RESULT no violation found: {d['afterhours_share_noviol']*100:.0f}%")
+print(f"RESULT end in a violation: {d['afterhours_share_viol']*100:.1f}%")
+print(f"RESULT inspected the same day: {d['afterhours_share_same_day']*100:.0f}%")
+print(f"RESULT median days to inspection: {d['afterhours_median_days_to_inspection']:.0f}")
+''')
+
 sec("Complaints per building by borough",
     "Complaints per residential tax lot by borough; Manhattan leads because a "
     "Manhattan lot is often a whole tower (`post0_descriptive_stats.py`).",
