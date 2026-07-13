@@ -1,0 +1,5 @@
+# environment for overview_results.ipynb (Python 3.14)
+pyfixest==0.60.0
+pandas==3.0.0
+numpy==2.3.5
+scipy==1.17.0
