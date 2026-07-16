@@ -255,6 +255,7 @@ def load():
 # ---- figure styling: lifted from scripts/size_text_figure.py ----
 SURFACE = "#fcfcfb"; INK = "#0b0b0b"; INK2 = "#52514e"; MUTED = "#898781"
 GRID = "#e1e0d9"; ZERO = "#b9b7ac"; BLUE = "#2a78d6"; RED = "#e34948"
+AQUA = "#1baf7a"
 
 plt.rcParams.update({
     "font.family": ["Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"],
@@ -279,28 +280,58 @@ PLACE_TOKENS = {normalize_token(w) for w in
                  "manhattan", "flushing", "macon"}}
 
 
-def _word_panel(ax, z, title):
-    z = z[~z["word"].isin(DISPLAY_EXCLUDE)]
-    z = z[~z["word"].apply(
-        lambda w: any(t in URL_TOKENS or t in PLACE_TOKENS for t in w.split()))]
-    d = pd.concat([z.nsmallest(10, "z").sort_values("z"),
-                   z.nlargest(10, "z").sort_values("z")])
+TOP_N = 10          # per side, per kind: 10 single words + 10 word pairs each side of zero
+# kind -> (colour, marker, marker size). Kind is carried by BOTH colour and marker
+# shape, so it survives colour-blind and greyscale reading. Matches the style set in
+# scripts/make_text_figures.py (BLUE circles / AQUA diamonds); keep in sync.
+KINDS = [("Single words", BLUE, "o", 58), ("Word pairs", AQUA, "D", 44)]
+
+
+def _merged_panel(ax, z, zb, side_note):
+    """Single words AND word pairs on ONE cartesian plane (see size/origin/
+    strictness/race versions; keep in sync).
+
+    They can share an x-axis because they share a metric: the informed-Dirichlet
+    log-odds z-score. Single words sit farther from zero -- they are counted far
+    more often, so their z carries less sampling noise -- while word pairs land
+    nearer the middle. Points are sorted by z, so the plane reads bottom-left to
+    top-right, with the pairs occupying the centre band."""
+    def top(df, kind):
+        d = df[~df["word"].isin(DISPLAY_EXCLUDE)]
+        d = d[~d["word"].apply(
+            lambda w: any(t in URL_TOKENS or t in PLACE_TOKENS for t in w.split()))]
+        return pd.concat([d.nsmallest(TOP_N, "z"),
+                          d.nlargest(TOP_N, "z")]).assign(kind=kind)
+
+    d = (pd.concat([top(z, "Single words"), top(zb, "Word pairs")])
+           .sort_values("z").reset_index(drop=True))
+    d["y"] = np.arange(len(d))
+
     ax.axvline(0, color=ZERO, lw=1.1)
     ax.grid(axis="x", color=GRID, lw=0.8)
-    ys = np.arange(len(d))
-    ax.scatter(d["z"], ys, s=60, color=BLUE, zorder=3, edgecolors=SURFACE, linewidths=1.5)
-    for y, (_, row) in zip(ys, d.iterrows()):
+    for kind, colour, marker, size in KINDS:
+        s = d[d["kind"] == kind]
+        ax.scatter(s["z"], s["y"], s=size, color=colour, marker=marker, zorder=3,
+                   edgecolors=SURFACE, linewidths=1.4, label=kind)
+    for _, row in d.iterrows():
         ha = "right" if row["z"] < 0 else "left"
         off = -7 if row["z"] < 0 else 7
-        ax.annotate(row["word"], (row["z"], y), textcoords="offset points",
+        ax.annotate(row["word"], (row["z"], row["y"]), textcoords="offset points",
                     xytext=(off, 0), va="center", ha=ha, fontsize=9, color=INK)
     ax.set_yticks([])
     zmin, zmax = float(d["z"].min()), float(d["z"].max())
     span = zmax - zmin
-    ax.set_xlim(zmin - 0.34 * span, zmax + 0.34 * span)
-    ax.set_title(title, loc="left", fontsize=9.5, color=INK2, pad=8)
+    ax.set_xlim(zmin - 0.36 * span, zmax + 0.36 * span)
+    ax.set_ylim(-0.9, len(d) - 0.1)
+    ax.set_xlabel("informed-Dirichlet log-odds z-score (unitless)", fontsize=9)
     ax.tick_params(labelsize=8.5)
     ax.spines[["top", "right", "left"]].set_visible(False)
+    leg = ax.legend(loc="upper left", frameon=False, fontsize=9,
+                    handletextpad=0.4, borderaxespad=0.6, scatterpoints=1)
+    for t in leg.get_texts():
+        t.set_color(INK2)
+    ax.text(0.985, 0.02, side_note, transform=ax.transAxes, fontsize=8.8,
+            color=MUTED, ha="right", va="bottom", style="italic")
 
 
 def _wrap(fig, text, maxfrac=0.985, fontsize=9):
@@ -329,33 +360,28 @@ def _wrap(fig, text, maxfrac=0.985, fontsize=9):
 
 
 def make_figure(z, zb, n_llc, n_occ):
-    fig, axes = plt.subplots(2, 1, figsize=(7.2, 9.0),
-                             gridspec_kw={"left": 0.04, "right": 0.97, "top": 0.832,
-                                          "bottom": 0.06, "hspace": 0.34})
-    _word_panel(axes[0], z, "Single words")
-    _word_panel(axes[1], zb, "Word pairs")
-    for ax in axes:
-        ax.text(0.985, 0.03,
-                f"right of zero = more typical at {LLC_LBL}\n"
-                f"left of zero = more typical at {OCC_LBL}",
-                transform=ax.transAxes, fontsize=8.8, color=MUTED,
-                ha="right", va="bottom", style="italic")
-        ax.set_xlabel("informed-Dirichlet log-odds z-score (unitless)", fontsize=9)
+    fig, ax = plt.subplots(figsize=(7.6, 10.2),
+                           gridspec_kw={"left": 0.04, "right": 0.97,
+                                        "top": 0.868, "bottom": 0.052})
+    _merged_panel(ax, z, zb,
+                  f"right of zero = more typical at {LLC_LBL}\n"
+                  f"left of zero = more typical at {OCC_LBL}")
     fig.suptitle("Words and word pairs that distinguish complaints at owner-occupied\nvs. LLC / out-of-town-owned buildings",
                  x=0.02, y=0.987, ha="left", fontsize=12.5, color=INK, weight="semibold")
+    scale_note = ("top 10 each side for words and for word pairs, ranked together on one scale · "
+                  "URL fragments and place names omitted for display")
     if RESIDENTIAL_ONLY:
         # purely-residential scope note; wrapped dynamically so it never clips
         subtitle = _wrap(fig,
             f"Callers' own complaint text (not inspector reports) · 311-referenced complaints, 2020-present · "
             f"purely residential (residential building class, no non-residential units), <6 units · {n_llc:,} subjects "
             f"at {LLC_LBL} vs. {n_occ:,} at {OCC_LBL} · singular and plural forms combined · adjacent words where "
-            f"neither is a stopword · URL fragments and place names omitted for display")
+            f"neither is a stopword · {scale_note}")
     else:
-        subtitle = (
-            f"Callers' own complaint text (not inspector reports) · 311-referenced complaints, 2020-present · <6-unit residential\n"
-            f"buildings · {n_llc:,} subjects at {LLC_LBL} vs. {n_occ:,} at {OCC_LBL} · "
-            f"singular and plural forms combined ·\nadjacent words where neither is a stopword · "
-            f"URL fragments and place names omitted for display")
+        subtitle = _wrap(fig,
+            f"Callers' own complaint text (not inspector reports) · 311-referenced complaints, 2020-present · "
+            f"<6-unit residential buildings · {n_llc:,} subjects at {LLC_LBL} vs. {n_occ:,} at {OCC_LBL} · "
+            f"singular and plural forms combined · adjacent words where neither is a stopword · {scale_note}")
     fig.text(0.02, 0.938, subtitle, fontsize=9, color=MUTED, va="top")
     ART.mkdir(parents=True, exist_ok=True)
     out = ART / f"owner_occ_vs_llc{SUFFIX}_complaint_words.png"

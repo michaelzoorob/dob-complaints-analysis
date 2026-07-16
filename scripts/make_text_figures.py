@@ -26,6 +26,7 @@ RM = config.DATA_DIR / "analysis" / "risk_models"
 
 SURFACE = "#fcfcfb"; INK = "#0b0b0b"; INK2 = "#52514e"; MUTED = "#898781"
 GRID = "#e1e0d9"; ZERO = "#b9b7ac"; BLUE = "#2a78d6"; RED = "#e34948"
+AQUA = "#1baf7a"
 
 plt.rcParams.update({
     "font.family": ["Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"],
@@ -123,46 +124,69 @@ DISPLAY_EXCLUDE = {"http", "https", "www", "com",           # URL fragments
 URL_TOKENS = {"http", "https", "www", "com"}
 
 
-def _word_panel(ax, csv, title, xlim):
+def _top_terms(csv, kind, n=10):
+    """Top n terms each side of zero, filtered of URL/place artifacts."""
     z = pd.read_csv(RM / csv)
     z = z[~z["word"].isin(DISPLAY_EXCLUDE)]
     z = z[~z["word"].apply(lambda w: any(t in URL_TOKENS for t in w.split()))]
-    d = pd.concat([z.nsmallest(10, "z").sort_values("z"),
-                   z.nlargest(10, "z").sort_values("z")])
+    return pd.concat([z.nsmallest(n, "z"), z.nlargest(n, "z")]).assign(kind=kind)
+
+
+# Single words and word pairs share one axis: both are informed-Dirichlet
+# z-scores on the same scale, so interleaving them by z lets a reader see
+# where a phrase outranks any single word. Kind is carried by colour AND
+# marker shape, so it survives colour-blind and greyscale reading.
+KIND_STYLE = {
+    "Single words": dict(color=BLUE, marker="o", size=58),
+    "Word pairs":   dict(color=AQUA, marker="D", size=44),
+}
+
+
+def fig_words():
+    d = pd.concat([_top_terms("conversion_word_logodds.csv", "Single words"),
+                   _top_terms("conversion_bigram_logodds.csv", "Word pairs")])
+    d = d.sort_values("z").reset_index(drop=True)
+
+    fig, ax = plt.subplots(figsize=(7.6, 10.2),
+                           gridspec_kw={"left": 0.04, "right": 0.97,
+                                        "top": 0.868, "bottom": 0.052})
     ax.axvline(0, color=ZERO, lw=1.1)
     ax.grid(axis="x", color=GRID, lw=0.8)
+
     ys = np.arange(len(d))
-    ax.scatter(d["z"], ys, s=60, color=BLUE, zorder=3, edgecolors=SURFACE, linewidths=1.5)
+    for kind, st in KIND_STYLE.items():
+        m = (d["kind"] == kind).to_numpy()
+        ax.scatter(d.loc[m, "z"], ys[m], s=st["size"], color=st["color"],
+                   marker=st["marker"], zorder=3, edgecolors=SURFACE,
+                   linewidths=1.5, label=kind)
     for y, (_, row) in zip(ys, d.iterrows()):
         ha = "right" if row["z"] < 0 else "left"
         off = -7 if row["z"] < 0 else 7
         ax.annotate(row["word"], (row["z"], y), textcoords="offset points",
                     xytext=(off, 0), va="center", ha=ha, fontsize=9, color=INK)
+
     ax.set_yticks([])
-    ax.set_xlim(*xlim)
-    ax.set_title(title, loc="left", fontsize=9.5, color=INK2, pad=8)
+    ax.set_ylim(-0.9, len(d) - 0.1)
+    ax.set_xlim(-19, 27)
+    ax.set_xlabel("informed-Dirichlet log-odds z-score (unitless)", fontsize=9)
     ax.tick_params(labelsize=8.5)
     ax.spines[["top", "right", "left"]].set_visible(False)
 
+    leg = ax.legend(loc="upper left", frameon=False, fontsize=9,
+                    handletextpad=0.4, borderaxespad=0.6, scatterpoints=1)
+    for t in leg.get_texts():
+        t.set_color(INK2)
+    ax.text(0.985, 0.02, "right of zero = more typical at Asian-owned homes\n"
+                         "left of zero = more typical at white-owned homes",
+            transform=ax.transAxes, fontsize=8.8, color=MUTED,
+            ha="right", va="bottom", style="italic")
 
-def fig_words():
-    fig, axes = plt.subplots(2, 1, figsize=(7.2, 9.0),
-                             gridspec_kw={"left": 0.04, "right": 0.97, "top": 0.832,
-                                          "bottom": 0.06, "hspace": 0.34})
-    _word_panel(axes[0], "conversion_word_logodds.csv", "Single words", (-17, 25))
-    _word_panel(axes[1], "conversion_bigram_logodds.csv", "Word pairs", (-15, 21))
-    for ax in axes:
-        ax.text(0.985, 0.03, "right of zero = more typical at Asian-owned homes\n"
-                             "left of zero = more typical at white-owned homes",
-                transform=ax.transAxes, fontsize=8.8, color=MUTED,
-                ha="right", va="bottom", style="italic")
-    for ax in axes:
-        ax.set_xlabel("informed-Dirichlet log-odds z-score (unitless)", fontsize=9)
     fig.suptitle("Words and word pairs that distinguish illegal-conversion complaints,\nby predicted owner race",
-                 x=0.02, y=0.987, ha="left", fontsize=12.5, color=INK, weight="semibold")
-    fig.text(0.02, 0.938, "Callers' own complaint text (not inspector reports) · 311-referenced complaints only · 13,041 conversion\n"
+                 x=0.02, y=0.988, ha="left", fontsize=12.5, color=INK, weight="semibold")
+    fig.text(0.02, 0.946, "Callers' own complaint text (not inspector reports) · 311-referenced complaints only · 13,041 conversion\n"
                           "complaints at Asian-owned (P>0.7) homes vs. 3,849 at white-owned · singular and plural forms combined ·\n"
-                          "adjacent words where neither is a stopword · URL fragments and place names omitted for display",
+                          "adjacent words where neither is a stopword · top 10 each side for words and for word pairs, ranked\n"
+                          "together on one scale · URL fragments and place names omitted for display",
              fontsize=9, color=MUTED, va="top")
     fig.savefig(ART / "asian_conversion_words.png", dpi=200)
     plt.close(fig)
