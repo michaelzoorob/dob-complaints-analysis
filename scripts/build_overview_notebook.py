@@ -163,15 +163,22 @@ def sec(heading, note, code):
     S.append((heading, note, code))
 
 sec("Panel universe and coverage",
-    "Lot universe, residential units, deed-address owner-geography coverage, and "
-    "the number of scraped complaints matched to a residential lot "
-    "(`panel_headline_counts.py`).",
+    "Lot universe, residential units, deed-address owner-geography coverage, and the "
+    "count and share of scraped complaints that match a residential lot -- the 83% "
+    "figure (`panel_headline_counts.py`, `post0_descriptive_stats.py`).",
     r'''
 phc = committed("panel_headline_counts.csv").set_index("metric")["value"]
+d = committed("post0_descriptive_stats.csv").set_index("metric")["value"].astype(float)
 print(f"RESULT residential lots: {len(panel):,}")
 print(f"RESULT residential units: {panel['unitsres'].sum()/1e6:.2f} million")
 print(f"RESULT owner-geography coverage: {phc['owner_geo_coverage_share']*100:.0f}%")
-print(f"RESULT complaints matched to a residential lot: {phc['matched_complaints_2020_may2026']:,.0f}")
+matched, scraped = d["matched_residential_pages"], d["scraped_pages"]
+print(f"RESULT complaints matched to a residential lot: {matched:,.0f}"
+      f"  ({matched/scraped*100:.0f}% of {scraped:,.0f} scraped)")
+# the two producing scripts must agree on the matched count, and the committed
+# share must equal the ratio recomputed here
+assert int(matched) == int(phc["matched_complaints_2020_may2026"])
+assert abs(d["matched_residential_share"] - matched/scraped) < 1e-6
 ''')
 
 sec("Complaint volume since 2020",
@@ -373,15 +380,24 @@ print(f"\nRESULT South Ozone Park's hottest tracts file several times their pred
 ''')
 
 sec("Complaint and inspector text coverage",
-    "Share of scraped pages carrying the caller's complaint text and the "
-    "inspector's narrative, and the distinct inspector count "
-    "(`post0_descriptive_stats.py`).",
+    "The scrape universe and coverage -- complaints filed in the window, pages "
+    "actually scraped, and the count and share carrying an inspection report -- then "
+    "the caller's complaint-text coverage and the distinct inspector count "
+    "(`post0_descriptive_stats.py`). The counts here are the TLDR's 783,355 / 783,289 "
+    "/ 778,312.",
     r'''
 d = committed("post0_descriptive_stats.csv").set_index("metric")["value"].astype(float)
-print(f"RESULT complaint text coverage: {d['share_with_complaint_text']*100:.1f}%")
-print(f"RESULT inspector narrative coverage: {d['share_with_inspection_comments']*100:.1f}%")
+filed, scraped = d["window_filed_complaints"], d["scraped_pages"]
+report, subj = d["n_with_inspection_comments"], d["n_with_complaint_text"]
+print(f"RESULT complaints filed Jan 2020-May 2026: {filed:,.0f}")
+print(f"RESULT scraped complaint pages: {scraped:,.0f}  ({scraped/filed*100:.2f}% of filed)")
+print(f"RESULT carry an inspection report (inspector narrative): {report:,.0f}  ({report/scraped*100:.1f}%)")
+print(f"RESULT carry the caller's complaint text: {subj:,.0f}  ({subj/scraped*100:.1f}%)")
 print(f"RESULT distinct inspector badges: {d['distinct_inspector_badges']:,.0f}")
-print(f"RESULT complaints with caller text: {d['n_with_complaint_text']:,.0f}")
+# the committed rounded shares must match the counts recomputed here
+assert abs(d["scrape_coverage_share"] - scraped/filed) < 1e-6
+assert abs(d["share_with_inspection_comments"] - round(report/scraped, 4)) < 1e-6
+assert abs(d["share_with_complaint_text"] - round(subj/scraped, 4)) < 1e-6
 ''')
 
 sec("Where complaints originate",

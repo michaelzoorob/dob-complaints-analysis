@@ -1,7 +1,9 @@
 metric,value
 scraped_pages,783289.0
 window_filed_complaints,783355.0
+scrape_coverage_share,0.999916
 share_with_inspection_comments,0.9936
+n_with_inspection_comments,778312.0
 share_with_complaint_text,0.7872
 n_with_complaint_text,616614.0
 share_ecb_linked,0.2137
@@ -17,6 +19,8 @@ afterhours_share_noviol,0.8575
 afterhours_share_viol,0.0331
 afterhours_share_same_day,0.1063
 afterhours_median_days_to_inspection,4.0
+matched_residential_pages,648363.0
+matched_residential_share,0.827744
 complaints_per_lot_BK,0.91
 complaints_per_lot_BX,1.23
 complaints_per_lot_MN,3.89

@@ -31,13 +31,16 @@ def main() -> None:
         print(f"{metric:<44} {value}")
 
     # scrape universe and window-filed count (open_data dates are MM/DD/YYYY)
-    add("scraped_pages", con.execute("SELECT COUNT(*) FROM bis_scrape").fetchone()[0])
+    scraped = con.execute("SELECT COUNT(*) FROM bis_scrape").fetchone()[0]
+    add("scraped_pages", scraped)
     q = """
     SELECT COUNT(*) FROM open_data
     WHERE substr(date_entered,7,4) || '-' || substr(date_entered,1,2) || '-' || substr(date_entered,4,2)
           BETWEEN ? AND ?
     """
-    add("window_filed_complaints", con.execute(q, WINDOW).fetchone()[0])
+    filed = con.execute(q, WINDOW).fetchone()[0]
+    add("window_filed_complaints", filed)
+    add("scrape_coverage_share", round(scraped / filed, 6))
 
     # scraped-page fill rates, ECB link, badges, buildings
     b = pd.read_sql_query(
@@ -45,6 +48,7 @@ def main() -> None:
         " FROM bis_scrape", con)
     add("share_with_inspection_comments",
         round((b["comments"].fillna("").str.strip() != "").mean(), 4))
+    add("n_with_inspection_comments", int((b["comments"].fillna("").str.strip() != "").sum()))
     add("share_with_complaint_text",
         round((b["subject"].fillna("").str.strip() != "").mean(), 4))
     add("n_with_complaint_text", int((b["subject"].fillna("").str.strip() != "").sum()))
@@ -94,6 +98,14 @@ def main() -> None:
     # borough per-lot rates and tract percentiles from the risk panel
     panel = pd.read_csv(config.DATA_DIR / "analysis" / "property_risk_panel_v2.csv.gz",
                         usecols=["borough", "n_complaints", "unitsres", "bct2020"])
+
+    # scraped complaints matched to a residential lot (the panel's n_complaints is
+    # the per-lot count of window complaints landing on a residential PLUTO lot);
+    # its total is the numerator of the "83% match a residential lot" claim, with
+    # the scraped-page count as denominator. Mirrors panel_headline_counts.py.
+    matched = int(panel.n_complaints.sum())
+    add("matched_residential_pages", matched)
+    add("matched_residential_share", round(matched / scraped, 6))
     per_lot = panel.groupby("borough").agg(compl=("n_complaints", "sum"),
                                            lots=("n_complaints", "size"))
     per_lot["per_lot"] = per_lot.compl / per_lot.lots
