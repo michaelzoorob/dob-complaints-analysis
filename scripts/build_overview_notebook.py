@@ -421,6 +421,26 @@ print(f"RESULT disposition ~ DOB union: {phc['pearson_n_viol_disp_vs_n_dobviol_u
 print(f"RESULT ECB ~ DOB union: {phc['pearson_n_ecb_2020on_vs_n_dobviol_union']:.2f}")
 ''')
 
+sec("Violation type composition",
+    "Of complaints that end in a violation, the BIS disposition code records which "
+    "enforcement instrument was issued (`post0_violation_type_composition.py`). Most "
+    "are OATH/ECB penalty summonses (code A8); a smaller share are DOB Buildings "
+    "corrective violations (codes A1, A6); a few are both (A9); the rest are other "
+    "enforcement such as stop-work and vacate orders. This composition is why the "
+    "disposition-violation measure tracks the ECB measure far more closely than the "
+    "deduplicated DOB-violation union.",
+    r'''
+vt = committed("violation_type_composition.csv").set_index("category")
+tot = int(vt.loc["total", "n"])
+for cat in ["oath_ecb", "buildings_dob", "both", "other_enforcement"]:
+    r = vt.loc[cat]
+    print(f"RESULT {r['label']}: {int(r['n']):,} ({r['share']*100:.1f}% of {tot:,})")
+# the four buckets must partition the total exactly
+parts = vt.loc[["oath_ecb", "buildings_dob", "both", "other_enforcement"]]
+assert int(parts["n"].sum()) == tot
+assert abs(parts["share"].sum() - 1) < 0.001
+''')
+
 sec("Raw citation rates by owner type",
     "Raw ECB citations per 100 lots per year by owner type, before any adjustment "
     "(`violation_rate_models.py`).",

@@ -1,0 +1,6 @@
+category,label,codes,n,share
+oath_ecb,OATH / ECB violation (penalty summons),A8,137609,0.789
+buildings_dob,DOB Buildings violation (corrective notice),A1+A6,12818,0.0735
+both,Both an OATH and a DOB violation,A9,769,0.0044
+other_enforcement,"Other enforcement (stop-work, vacate, criminal summons, deficiency)",rest,23208,0.1331
+total,All violation dispositions,all,174404,1.0
