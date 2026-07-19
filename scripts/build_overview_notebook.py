@@ -426,9 +426,12 @@ sec("Violation type composition",
     "enforcement instrument was issued (`post0_violation_type_composition.py`). Most "
     "are OATH/ECB penalty summonses (code A8); a smaller share are DOB Buildings "
     "corrective violations (codes A1, A6); a few are both (A9); the rest are other "
-    "enforcement such as stop-work and vacate orders. This composition is why the "
-    "disposition-violation measure tracks the ECB measure far more closely than the "
-    "deduplicated DOB-violation union.",
+    "enforcement such as stop-work and vacate orders. The second block shows the "
+    "other side of the argument, from the deduplicated BIS + DOB NOW violation union "
+    "(`dob_ledger.py`): the union is overwhelmingly periodic inspection categories, "
+    "and complaint-served Buildings violations are a sliver of it, which is why the "
+    "disposition and ECB measures move together while the DOB violations dataset "
+    "moves separately.",
     r'''
 vt = committed("violation_type_composition.csv").set_index("category")
 tot = int(vt.loc["total", "n"])
@@ -439,6 +442,17 @@ for cat in ["oath_ecb", "buildings_dob", "both", "other_enforcement"]:
 parts = vt.loc[["oath_ecb", "buildings_dob", "both", "other_enforcement"]]
 assert int(parts["n"].sum()) == tot
 assert abs(parts["share"].sum() - 1) < 0.001
+uni, per, cbe = (vt.loc["dob_union_entries"], vt.loc["dob_union_periodic"],
+                 vt.loc["complaint_buildings_events"])
+print(f"RESULT DOB violation union entries, Jan 2020-May 2026: {int(uni['n']):,}")
+print(f"RESULT union entries in periodic categories (elevator, boiler, gas piping, "
+      f"energy, facade): {int(per['n']):,} ({per['share']*100:.0f}%)")
+print(f"RESULT complaints that served a Buildings violation (A1, A6, A9): {int(cbe['n']):,}")
+# complaint-served Buildings events = the A1+A6 bucket plus the A9 bucket, and the
+# committed shares must equal the ratios recomputed here
+assert int(cbe["n"]) == int(vt.loc["buildings_dob", "n"]) + int(vt.loc["both", "n"])
+assert abs(per["share"] - per["n"] / uni["n"]) < 1e-4
+assert abs(cbe["share"] - cbe["n"] / uni["n"]) < 1e-4
 ''')
 
 sec("Raw citation rates by owner type",

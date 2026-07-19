@@ -4,3 +4,6 @@ buildings_dob,DOB Buildings violation (corrective notice),A1+A6,12818,0.0735
 both,Both an OATH and a DOB violation,A9,769,0.0044
 other_enforcement,"Other enforcement (stop-work, vacate, criminal summons, deficiency)",rest,23208,0.1331
 total,All violation dispositions,all,174404,1.0
+dob_union_entries,Deduplicated BIS + DOB NOW violation union entries,union,705008,1.0
+dob_union_periodic,"Union entries in periodic categories (elevator, boiler, gas piping, energy, facade)",families,661926,0.9389
+complaint_buildings_events,Complaints that served a Buildings violation,A1+A6+A9,13587,0.0193

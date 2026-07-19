@@ -19,6 +19,14 @@ A8 rows carry an ECB violation number on the scraped BIS page 99.9% of the time
 while A1/A6 rows almost never do, which is the direct evidence that A8 is the
 OATH/ECB instrument and A1/A6 are the non-ECB Buildings instrument.
 
+Also tabulates the other side of the appendix argument: the deduplicated
+BIS + DOB NOW violation union (dob_ledger.py) over the same window, split into
+periodic inspection categories (elevator, boiler, gas piping, energy, facade)
+versus construction and other, plus the count of complaints that served a
+Buildings violation (A1, A6, A9). The union is overwhelmingly periodic, which
+is why the disposition and ECB measures move together while the DOB violations
+dataset moves separately.
+
 Output: data/analysis/risk_models/violation_type_composition.csv
 """
 import sqlite3
@@ -32,6 +40,9 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 import config  # noqa: E402
 import disposition_codes as dc  # noqa: E402
+import dob_ledger  # noqa: E402
+
+PERIODIC_FAMILIES = ["elev", "boiler", "gas_plumb", "energy", "facade"]
 
 WINDOW = ("2020-01-01", "2026-05-31")
 YMD = ("substr(date_entered,7,4) || '-' || substr(date_entered,1,2) "
@@ -53,6 +64,12 @@ def main() -> None:
         f"SELECT disposition_code, COUNT(*) FROM open_data "
         f"WHERE disposition_code IN ({codes}) "
         f"AND {YMD} BETWEEN ? AND ? GROUP BY disposition_code", WINDOW))
+
+    # the union side of the appendix argument (dob_ledger.py; ymd is YYYYMMDD)
+    u = dob_ledger.union_frame(con)
+    w = u[(u.ymd >= WINDOW[0].replace("-", "")) & (u.ymd <= WINDOW[1].replace("-", ""))]
+    union_n = len(w)
+    periodic_n = int(w.family.isin(PERIODIC_FAMILIES).sum())
     con.close()
 
     total = sum(counts.values())
@@ -68,6 +85,23 @@ def main() -> None:
         codes="rest", n=other, share=round(other / total, 4)))
     rows.append(dict(category="total", label="All violation dispositions",
                      codes="all", n=total, share=1.0))
+
+    # union rows: shares are relative to the union entry count, not the
+    # disposition total above
+    buildings_events = sum(counts.get(c, 0) for c in ("A1", "A6", "A9"))
+    rows.append(dict(
+        category="dob_union_entries",
+        label="Deduplicated BIS + DOB NOW violation union entries",
+        codes="union", n=union_n, share=1.0))
+    rows.append(dict(
+        category="dob_union_periodic",
+        label="Union entries in periodic categories (elevator, boiler, gas piping, energy, facade)",
+        codes="families", n=periodic_n, share=round(periodic_n / union_n, 4)))
+    rows.append(dict(
+        category="complaint_buildings_events",
+        label="Complaints that served a Buildings violation",
+        codes="A1+A6+A9", n=buildings_events,
+        share=round(buildings_events / union_n, 4)))
 
     df = pd.DataFrame(rows)
     out_path = (config.DATA_DIR / "analysis" / "risk_models"
