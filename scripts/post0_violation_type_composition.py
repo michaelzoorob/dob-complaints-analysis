@@ -70,6 +70,19 @@ def main() -> None:
     w = u[(u.ymd >= WINDOW[0].replace("-", "")) & (u.ymd <= WINDOW[1].replace("-", ""))]
     union_n = len(w)
     periodic_n = int(w.family.isin(PERIODIC_FAMILIES).sum())
+
+    # the ECB/OATH docket itself: how much of it is escalation-style (failing to
+    # certify correction of an earlier violation, or to comply with an order)
+    # versus direct condition citations served at the inspection
+    ecb_window = ("substr(issue_date,1,4) BETWEEN '2020' AND '2026' "
+                  "AND substr(issue_date,1,6) <= '202605'")
+    docket_n = con.execute(
+        f"SELECT COUNT(*) FROM ecb_violations WHERE {ecb_window}").fetchone()[0]
+    escalation_n = con.execute(f"""
+        SELECT COUNT(*) FROM ecb_violations WHERE {ecb_window}
+        AND (UPPER(violation_description) LIKE '%FAIL%CERTIF%CORRECT%'
+          OR UPPER(violation_description) LIKE '%FAIL%COMPLY%COMMISSIONER%'
+          OR UPPER(violation_description) LIKE '%FAIL%COMPLY%ORDER%')""").fetchone()[0]
     con.close()
 
     total = sum(counts.values())
@@ -102,6 +115,16 @@ def main() -> None:
         label="Complaints that served a Buildings violation",
         codes="A1+A6+A9", n=buildings_events,
         share=round(buildings_events / union_n, 4)))
+
+    # docket rows: shares are relative to the docket entry count
+    rows.append(dict(
+        category="ecb_docket_entries",
+        label="ECB/OATH summonses issued (penalty docket)",
+        codes="docket", n=docket_n, share=1.0))
+    rows.append(dict(
+        category="ecb_docket_escalation",
+        label="Docket charges for failure to certify correction or comply with an order",
+        codes="pattern", n=escalation_n, share=round(escalation_n / docket_n, 4)))
 
     df = pd.DataFrame(rows)
     out_path = (config.DATA_DIR / "analysis" / "risk_models"

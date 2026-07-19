@@ -7,3 +7,5 @@ total,All violation dispositions,all,174404,1.0
 dob_union_entries,Deduplicated BIS + DOB NOW violation union entries,union,705008,1.0
 dob_union_periodic,"Union entries in periodic categories (elevator, boiler, gas piping, energy, facade)",families,661926,0.9389
 complaint_buildings_events,Complaints that served a Buildings violation,A1+A6+A9,13587,0.0193
+ecb_docket_entries,ECB/OATH summonses issued (penalty docket),docket,369453,1.0
+ecb_docket_escalation,Docket charges for failure to certify correction or comply with an order,pattern,47273,0.128

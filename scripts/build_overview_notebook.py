@@ -453,6 +453,11 @@ print(f"RESULT complaints that served a Buildings violation (A1, A6, A9): {int(c
 assert int(cbe["n"]) == int(vt.loc["buildings_dob", "n"]) + int(vt.loc["both", "n"])
 assert abs(per["share"] - per["n"] / uni["n"]) < 1e-4
 assert abs(cbe["share"] - cbe["n"] / uni["n"]) < 1e-4
+dk, esc = vt.loc["ecb_docket_entries"], vt.loc["ecb_docket_escalation"]
+print(f"RESULT ECB/OATH summonses issued, Jan 2020-May 2026 (penalty docket): {int(dk['n']):,}")
+print(f"RESULT docket charges for failure to certify correction or comply with an "
+      f"order: {int(esc['n']):,} ({esc['share']*100:.1f}%)")
+assert abs(esc["share"] - esc["n"] / dk["n"]) < 1e-4
 ''')
 
 sec("Raw citation rates by owner type",
