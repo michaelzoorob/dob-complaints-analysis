@@ -1,10 +1,11 @@
 """
 Figures for the risk-factor study (post 5).
 
-Fig 1: two-panel forest plot — complaint margin (PPML, % change) and
-       conditional violation margin (pp per inspection, category-adjusted),
-       both within census tract x building-size bin.
-Fig 2: two-margin scatter — "scrutiny vs substance" typology.
+Fig 1: four-panel forest plot — complaints (PPML, % change), ECB citations
+       (PPML, % change), DOB violation records (deduplicated union PPML,
+       % change), and violations per inspection (pp, category-adjusted),
+       all within census tract x building-size bin.
+Fig 2: scatter of complaint effects against per-inspection violation effects.
 
 Reads data/analysis/risk_models/tidy_estimates.csv.
 Writes data/analysis/blog_posts/artifacts/risk_forest.png, risk_two_margin.png
@@ -69,10 +70,10 @@ OWNER_RES = config.DATA_DIR / "analysis" / "risk_models" / "owner_tidy_estimates
 CITE_RES = config.DATA_DIR / "analysis" / "risk_models" / "citation_tidy_estimates.csv"
 
 
-def _rows(comp, cite, viol, factors, group):
+def _rows(comp, cite, dob, viol, factors, group):
     rows = []
     for term, label in factors:
-        c, e, v = comp.loc[term], cite.loc[term], viol.loc[term]
+        c, e, d, v = comp.loc[term], cite.loc[term], dob.loc[term], viol.loc[term]
         rows.append({
             "term": term, "label": label, "group": group,
             "c_est": (np.exp(c["estimate"]) - 1) * 100,
@@ -83,6 +84,10 @@ def _rows(comp, cite, viol, factors, group):
             "e_lo": (np.exp(e["estimate"] - 1.96 * e["std_error"]) - 1) * 100,
             "e_hi": (np.exp(e["estimate"] + 1.96 * e["std_error"]) - 1) * 100,
             "e_p": e["pr(>|t|)"],
+            "d_est": (np.exp(d["estimate"]) - 1) * 100,
+            "d_lo": (np.exp(d["estimate"] - 1.96 * d["std_error"]) - 1) * 100,
+            "d_hi": (np.exp(d["estimate"] + 1.96 * d["std_error"]) - 1) * 100,
+            "d_p": d["pr(>|t|)"],
             "v_est": v["estimate"], "v_lo": v["estimate"] - 1.96 * v["std_error"],
             "v_hi": v["estimate"] + 1.96 * v["std_error"], "v_p": v["pr(>|t|)"],
         })
@@ -94,13 +99,15 @@ def load():
     rc = pd.read_csv(CITE_RES)
     comp = r[r["model"] == "tract_ppml_ncomp"].set_index("term")
     cite = rc[rc["model"] == "ppml_ecb"].set_index("term")
+    dob = rc[rc["model"] == "ppml_dobviol"].set_index("term")
     viol = r[r["model"] == "cond_violrate_catadj"].set_index("term")
-    rows = _rows(comp, cite, viol, FACTORS, "base")
+    rows = _rows(comp, cite, dob, viol, FACTORS, "base")
     ro = pd.read_csv(OWNER_RES)
     ocomp = ro[ro["model"] == "owner_ppml_ncomp"].set_index("term")
     ocite = rc[rc["model"] == "ppml_ecb_owner"].set_index("term")
+    odob = rc[rc["model"] == "ppml_dobviol_owner"].set_index("term")
     oviol = ro[ro["model"] == "owner_cond_violrate"].set_index("term")
-    rows += _rows(ocomp, ocite, oviol, OWNER_FACTORS, "owner")
+    rows += _rows(ocomp, ocite, odob, oviol, OWNER_FACTORS, "owner")
     return pd.DataFrame(rows)
 
 
@@ -110,13 +117,14 @@ def forest(df: pd.DataFrame):
     y = np.arange(n, dtype=float)[::-1]
     gap = 0.9
     y[df["group"].values == "owner"] -= gap
-    fig, axes = plt.subplots(1, 3, figsize=(13.6, 7.4), sharey=True,
-                             gridspec_kw={"wspace": 0.06, "left": 0.27, "right": 0.988,
+    fig, axes = plt.subplots(1, 4, figsize=(16.6, 7.4), sharey=True,
+                             gridspec_kw={"wspace": 0.07, "left": 0.225, "right": 0.988,
                                           "top": 0.82, "bottom": 0.08})
     panels = [
         (axes[0], "c", "Complaints received, 2020–26\n(% difference)", "%"),
         (axes[1], "e", "ECB citations issued, 2020–26\n(% difference)", "%"),
-        (axes[2], "v", "Violations per inspection\n(percentage-point difference)", "pp"),
+        (axes[2], "d", "DOB violation records, 2020–26\n(% difference)", "%"),
+        (axes[3], "v", "Violations per inspection\n(percentage-point difference)", "pp"),
     ]
     for ax, pre, title, unit in panels:
         ax.axvline(0, color=BASE, lw=1.2, zorder=1)
@@ -141,14 +149,15 @@ def forest(df: pd.DataFrame):
         ax.axhline(ydiv, color=GRID, lw=1.0)
     axes[0].set_xlim(-60, 135)
     axes[1].set_xlim(-75, 205)
-    axes[2].set_xlim(-8, 8.5)
+    axes[2].set_xlim(min(df["d_lo"].min() * 1.1, -30), df["d_hi"].max() * 1.4)
+    axes[3].set_xlim(-8, 8.5)
     axes[0].set_yticks(y)
     axes[0].set_yticklabels(df["label"], fontsize=9.5, color=INK)
     for ax in axes:
         ax.tick_params(axis="y", length=0)
     fig.suptitle("Risk factors, comparing same-size buildings in the same census tract",
                  x=0.02, y=0.975, ha="left", fontsize=12.5, color=INK, weight="semibold")
-    fig.text(0.02, 0.925, "766,382 residential properties · census-tract and unit-count fixed effects · "
+    fig.text(0.02, 0.925, "about 766,000 residential properties (sample varies slightly by outcome) · census-tract and unit-count fixed effects · "
                           "filled = p<0.05 · whiskers = 95% CI, SEs clustered by tract ·\n"
                           "bottom panel: owner tier, from the owner-augmented specification "
                           "(deed mailing address name-matched to current owner)",
@@ -212,7 +221,7 @@ def two_margin(df: pd.DataFrame):
     ax.set_ylabel("Effect on violations per inspection (pp)", fontsize=10)
     ax.tick_params(labelsize=9)
     ax.spines[["top", "right"]].set_visible(False)
-    ax.set_title("Scrutiny vs. substance: the two margins of building enforcement",
+    ax.set_title("Complaints received vs. violations per inspection, by risk factor",
                  loc="left", fontsize=12.5, color=INK, weight="semibold", y=1.10)
     ax.text(0, 1.045, "x: % difference in 311/DOB complaints · y: pp difference in violation rate per substantive inspection,\n"
                       "category-adjusted · both within census tract × building-size bin · baseline violation rate: 31 per 100 inspections",
