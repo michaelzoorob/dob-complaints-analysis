@@ -134,7 +134,57 @@ def decomposition():
     print("saved", out)
 
 
+def hpd_forest():
+    g = pd.read_csv(RM / "neighborhood_hpd_gradients.csv")
+    g = g[(g["entry"] == "bivariate") & (g["sample"] == "all lots")]
+    h = pd.read_csv(RM / "neighborhood_hpd_hitrate.csv")
+    panels = [
+        ("n_hpd_complaints", "HPD complaints\n(% difference)", "pct"),
+        ("n_hpd_violations", "HPD violations\n(% difference)", "pct"),
+        ("hit", "HPD violation issued per\ninspected problem (pp)", "pp"),
+        ("noaccess", "HPD inspection ended\nwith no access (pp)", "pp"),
+    ]
+    fig, axes = plt.subplots(1, 4, figsize=(17.0, 7.0), sharey=True,
+                             gridspec_kw=dict(left=0.19, right=0.985, top=0.74, bottom=0.11, wspace=0.16))
+    y = np.arange(len(ORDER))[::-1]
+    for ax, (key, title, scale) in zip(axes, panels):
+        _style(ax)
+        if key in ("hit", "noaccess"):
+            b, c = (("hpd_hit_base", "hpd_hit_controls") if key == "hit" else ("hpd_noaccess_base", "hpd_noaccess_controls"))
+            tot = h[h.spec == b].set_index("term"); dir_ = h[h.spec == c].set_index("term")
+            est_t, lo_t, hi_t = tot.loc[ORDER, "estimate"], tot.loc[ORDER, "ci_lo"], tot.loc[ORDER, "ci_hi"]
+            est_d, lo_d, hi_d = dir_.loc[ORDER, "estimate"], dir_.loc[ORDER, "ci_lo"], dir_.loc[ORDER, "ci_hi"]
+        else:
+            sub = g[g.outcome == key]
+            tot = sub[sub.spec == "total"].set_index("term"); dir_ = sub[sub.spec == "direct"].set_index("term")
+            est_t, lo_t, hi_t = tot.loc[ORDER, "pct_change"], tot.loc[ORDER, "pct_lo"], tot.loc[ORDER, "pct_hi"]
+            est_d, lo_d, hi_d = dir_.loc[ORDER, "pct_change"], dir_.loc[ORDER, "pct_lo"], dir_.loc[ORDER, "pct_hi"]
+        off = 0.17
+        ax.hlines(y + off, lo_t, hi_t, color=BLUE, lw=1.6)
+        ax.plot(est_t, y + off, "o", ms=7, color=BLUE, mec=BLUE, zorder=3)
+        ax.hlines(y - off, lo_d, hi_d, color=INK2, lw=1.6)
+        ax.plot(est_d, y - off, "o", ms=7, mfc=SURFACE, mec=INK2, mew=1.6, zorder=3)
+        ax.set_title(title, fontsize=11, loc="left", color=INK2, pad=10)
+        lo, hi = min(lo_t.min(), lo_d.min()), max(hi_t.max(), hi_d.max())
+        pad = (hi - lo) * 0.12
+        ax.set_xlim(lo - pad, hi + pad)
+        ax.tick_params(axis="x", labelsize=9)
+        ax.set_yticks(y)
+    axes[0].set_yticklabels([LABEL[t] for t in ORDER], fontsize=10.5)
+    axes[0].tick_params(axis="y", length=0)
+    fig.text(0.02, 0.945, "The same comparisons in HPD's housing-maintenance system", fontsize=15, weight="bold", color=INK)
+    fig.text(0.02, 0.895, "Filled: building size held fixed only.   Hollow: building age, value within tract, ownership, use, and prior violations "
+             "also held fixed.   Whiskers: 95% CIs clustered by tract.", fontsize=10, color=MUTED)
+    fig.text(0.02, 0.86, "HPD complaints and violations per lot, 2020 to May 2026; the two right panels are problem level with major-category fixed effects.",
+             fontsize=10, color=MUTED)
+    out = ART / "neighborhood_hpd_forest.png"
+    fig.savefig(out, dpi=200)
+    print("saved", out)
+
+
 if __name__ == "__main__":
     ART.mkdir(parents=True, exist_ok=True)
     forest()
     decomposition()
+    if (RM / "neighborhood_hpd_gradients.csv").exists():
+        hpd_forest()

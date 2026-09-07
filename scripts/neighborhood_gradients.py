@@ -23,7 +23,12 @@ Caller complaints are complaints with a 311 reference number (the definition use
 post0_descriptive_stats.py); the rest are agency-initiated. Scheduled-inspection
 violations are the deduplicated BIS + DOB NOW union (dob_ledger.py), 2020 - May 2026.
 
-Outputs (data/analysis/risk_models/): neighborhood_gradients.csv,
+HPD stage (hpd_lot_outcomes.py extracts): the same total/direct gradients for HPD complaints
+and HPD violations, a problem-level HPD hit rate (violation issued vs none, among inspected
+problems) and no-access rate, and HPD quintile descriptives.
+
+Outputs (data/analysis/risk_models/): neighborhood_gradients.csv, neighborhood_hpd_gradients.csv,
+  neighborhood_hpd_hitrate.csv, neighborhood_hpd_descriptives.csv,
   neighborhood_decomposition.csv, neighborhood_hitrate.csv, neighborhood_descriptives.csv
 Committed extracts so the results notebook can refit without the 8 GB database:
   data/analysis/neighborhood_lot_outcomes.csv.gz  (bbl_key, n_caller, n_agency, n_dobviol_2020on)
@@ -84,6 +89,12 @@ GROUPS = {
 }
 CONTROLS = [c for g in GROUPS.values() for c in g]
 X = " + ".join(CONTROLS)
+HPD_LOTS = DATA / "hpd_lot_outcomes.csv.gz"
+HPD_PROBLEMS = DATA / "hpd_problems.csv.gz"
+HPD_OUTCOMES = {
+    "n_hpd_complaints": "HPD complaints",
+    "n_hpd_violations": "HPD violations",
+}
 OUTCOMES = {
     "n_caller": "caller complaints",
     "n_agency": "agency-initiated complaints",
@@ -251,7 +262,7 @@ def main():
     # stages: gradients, gelbach, hitrate, descriptives (default all). A stage whose CSV
     # already exists is skipped unless FORCE=1 is set in the environment.
     import os
-    stages = set(sys.argv[1].split(",")) if len(sys.argv) > 1 else {"gradients", "gelbach", "hitrate", "descriptives"}
+    stages = set(sys.argv[1].split(",")) if len(sys.argv) > 1 else {"gradients", "gelbach", "hitrate", "descriptives", "hpd"}
     force = os.environ.get("FORCE") == "1"
     def todo(stage, csv):
         if stage not in stages:
@@ -374,6 +385,82 @@ def main():
         hit["cluster"] = "bct2020"; hit["min_inspector_cases"] = MIN_INSPECTOR_CASES
         hit.to_csv(RM / "neighborhood_hitrate.csv", index=False)
         log("wrote neighborhood_hitrate.csv")
+
+    # ---- HPD: complaints, violations, problem-level hit rate and no access -------
+    if todo("hpd", "neighborhood_hpd_gradients.csv"):
+        hl = pd.read_csv(HPD_LOTS, dtype={"bbl_key": str})
+        hp = pd.read_csv(HPD_PROBLEMS, dtype={"bbl_key": str, "major_category": str})
+        est = est.merge(hl, on="bbl_key", how="left")
+        for col in hl.columns[1:]:
+            est[col] = est[col].fillna(0).astype(int)
+        log(f"HPD: {est['n_hpd_complaints'].sum():,} complaints and {est['n_hpd_violations'].sum():,} violations on the frame; "
+            f"lots with any HPD complaint {(est['n_hpd_complaints']>0).mean()*100:.1f}%")
+        ck = Checkpoint("hpd_gradients")
+        for y, ylab in HPD_OUTCOMES.items():
+            for d, dlab in DEMOS.items():
+                key = f"{y}|bivariate|{d}"
+                if key in ck.done:
+                    continue
+                rows = []
+                for spec, rhs in [("total", d), ("direct", f"{d} + {X}")]:
+                    m = pf.fepois(f"{y} ~ {rhs} | {FE_B}", data=est, vcov=VCOV, **LEAN)
+                    rows.append(dict(outcome=y, outcome_label=ylab, spec=spec, entry="bivariate", sample="all lots",
+                                     term=d, term_label=dlab, **irr_row(m, d)))
+                # multiple dwellings only (3+ units), where HPD's complaint system mainly operates
+                sub3 = est[est["unitsres"] >= 3]
+                m = pf.fepois(f"{y} ~ {d} | {FE_B}", data=sub3, vcov=VCOV, **LEAN)
+                rows.append(dict(outcome=y, outcome_label=ylab, spec="total", entry="bivariate", sample="3+ units",
+                                 term=d, term_label=dlab, **irr_row(m, d)))
+                ck.add(key, rows); gc.collect()
+                log(f"  {y} / {d}: total {rows[0]['pct_change']:+.1f}%  direct {rows[1]['pct_change']:+.1f}%  (3+ units total {rows[2]['pct_change']:+.1f}%)")
+        hg = ck.frame(); hg["fe"] = FE_B; hg["cluster"] = "bct2020"; hg["window"] = f"{WINDOW[0]}..{WINDOW[1]}"
+        hg.to_csv(RM / "neighborhood_hpd_gradients.csv", index=False)
+        log(f"wrote neighborhood_hpd_gradients.csv ({len(hg)} rows)")
+        # problem level
+        keep_h = ["bbl_key", "size_bin", "comm_bin", "borocode", "bct2020"] + list(DEMOS) + CONTROLS
+        hc = hp.merge(est[keep_h], on="bbl_key", how="inner")
+        hc = hc[hc["outcome"].isin(["violation", "no_violation", "no_access"])].copy()
+        hc["noaccess100"] = (hc["outcome"] == "no_access").astype(float) * 100
+        hacc = hc[hc["outcome"] != "no_access"].copy()
+        hacc["viol100"] = (hacc["outcome"] == "violation").astype(float) * 100
+        log(f"HPD hit-rate sample: {len(hacc):,} inspected problems (hit rate {hacc['viol100'].mean():.1f}%); "
+            f"attempted {len(hc):,} (no-access rate {hc['noaccess100'].mean():.1f}%)")
+        FE_P = "major_category + size_bin + comm_bin + borocode"
+        ck = Checkpoint("hpd_hitrate")
+        for d, dlab in DEMOS.items():
+            for spec, rhs, data, y in [("hpd_hit_base", d, hacc, "viol100"), ("hpd_hit_controls", f"{d} + {X}", hacc, "viol100"),
+                                       ("hpd_noaccess_base", d, hc, "noaccess100"), ("hpd_noaccess_controls", f"{d} + {X}", hc, "noaccess100")]:
+                key = f"{d}|{spec}"
+                if key in ck.done:
+                    continue
+                m = pf.feols(f"{y} ~ {rhs} | {FE_P}", data=data, vcov=VCOV, **LEAN)
+                r = dict(outcome=y, spec=spec, term=d, term_label=dlab, fe=FE_P, baseline_rate=float(data[y].mean()), **pp_row(m, d))
+                ck.add(key, [r]); gc.collect()
+                log(f"  {spec} {d}: {r['estimate']:+.2f} pp [{r['ci_lo']:+.2f}, {r['ci_hi']:+.2f}]")
+        hh = ck.frame(); hh["cluster"] = "bct2020"
+        hh.to_csv(RM / "neighborhood_hpd_hitrate.csv", index=False)
+        log("wrote neighborhood_hpd_hitrate.csv")
+        # quintile descriptives for HPD
+        qrows = []
+        for var, raw in [("poverty", "tract_poverty"), ("income", "med_income"), ("foreign_born", "tract_foreign_born"),
+                         ("black", "tract_pct_black"), ("hispanic", "tract_pct_hispanic"), ("asian", "tract_pct_asian"),
+                         ("renter", "tract_renter_share"), ("overcrowd", "tract_overcrowd")]:
+            q = pd.qcut(est[raw].rank(method="first"), 5, labels=[1, 2, 3, 4, 5]).astype(int)
+            hq = hc.merge(pd.DataFrame({"bbl_key": est["bbl_key"], "_q": q.values}), on="bbl_key")
+            for k in range(1, 6):
+                g = est[q.values == k]; gq = hq[hq["_q"] == k]; ak = gq[gq["outcome"] != "no_access"]
+                qrows.append(dict(variable=var, quintile=k, range_lo=float(g[raw].min()), range_hi=float(g[raw].max()), n_lots=len(g),
+                                  hpd_complaints_per100_yr=g["n_hpd_complaints"].sum() / len(g) / YEARS_C * 100,
+                                  hpd_violations_per100_yr=g["n_hpd_violations"].sum() / len(g) / YEARS_C * 100,
+                                  hpd_hit_rate=(ak["outcome"] == "violation").mean() if len(ak) else np.nan,
+                                  hpd_noaccess_rate=(gq["outcome"] == "no_access").mean() if len(gq) else np.nan))
+        ak = hc[hc["outcome"] != "no_access"]
+        qrows.append(dict(variable="all", quintile=0, range_lo=np.nan, range_hi=np.nan, n_lots=len(est),
+                          hpd_complaints_per100_yr=est["n_hpd_complaints"].sum() / len(est) / YEARS_C * 100,
+                          hpd_violations_per100_yr=est["n_hpd_violations"].sum() / len(est) / YEARS_C * 100,
+                          hpd_hit_rate=(ak["outcome"] == "violation").mean(), hpd_noaccess_rate=(hc["outcome"] == "no_access").mean()))
+        pd.DataFrame(qrows).to_csv(RM / "neighborhood_hpd_descriptives.csv", index=False)
+        log("wrote neighborhood_hpd_descriptives.csv")
 
     if not todo("descriptives", "neighborhood_descriptives.csv"):
         return

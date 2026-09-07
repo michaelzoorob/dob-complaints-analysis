@@ -8,5 +8,10 @@
  "Building stock decomposition of the caller complaint gradient": "Building-stock-decomposition-of-the-caller-complaint-gradient",
  "Hit rate by tract demographics with inspector fixed effects": "Hit-rate-by-tract-demographics-with-inspector-fixed-effects",
  "No access by tract demographics": "No-access-by-tract-demographics",
+ "Raw HPD rates by tract quintile": "Raw-HPD-rates-by-tract-quintile",
+ "HPD complaint gradients by tract demographics": "HPD-complaint-gradients-by-tract-demographics",
+ "HPD violation gradients by tract demographics": "HPD-violation-gradients-by-tract-demographics",
+ "HPD hit rate by tract demographics": "HPD-hit-rate-by-tract-demographics",
+ "HPD no access by tract demographics": "HPD-no-access-by-tract-demographics",
  "Verification against committed estimates": "Verification-against-committed-estimates"
 }

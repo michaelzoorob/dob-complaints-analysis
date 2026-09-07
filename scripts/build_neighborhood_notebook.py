@@ -111,6 +111,26 @@ acc = acc[acc["inspector_badge"].isin(_counts[_counts >= MIN_INSPECTOR_CASES].in
 FE_H0 = "complaint_category + size_bin + comm_bin + borocode"
 FE_H1 = FE_H0 + " + inspector_badge"
 REFIT = {}
+
+# HPD (Housing Maintenance Code) complaints, violations, and problem-level outcomes, from the
+# committed extracts written by hpd_lot_outcomes.py
+HPD_LOTS, HPD_PROBLEMS = DATA / "hpd_lot_outcomes.csv.gz", DATA / "hpd_problems.csv.gz"
+HAVE_HPD = HPD_LOTS.exists() and HPD_PROBLEMS.exists()
+if HAVE_HPD:
+    hl = pd.read_csv(HPD_LOTS, dtype={"bbl_key": str})
+    est = est.merge(hl, on="bbl_key", how="left")
+    for col in hl.columns[1:]:
+        est[col] = est[col].fillna(0).astype(int)
+    hp = pd.read_csv(HPD_PROBLEMS, dtype={"bbl_key": str, "major_category": str})
+    hc = hp.merge(est[keep_cols], on="bbl_key", how="inner")
+    hc = hc[hc["outcome"].isin(["violation", "no_violation", "no_access"])].copy()
+    hc["noaccess100"] = (hc["outcome"] == "no_access").astype(float) * 100
+    hacc = hc[hc["outcome"] != "no_access"].copy()
+    hacc["viol100"] = (hacc["outcome"] == "violation").astype(float) * 100
+    FE_P = "major_category + size_bin + comm_bin + borocode"
+    HPD_OUTCOMES = {"n_hpd_complaints": "HPD complaints", "n_hpd_violations": "HPD violations"}
+    print(f"HPD: {est['n_hpd_complaints'].sum():,} complaints, {est['n_hpd_violations'].sum():,} violations on the frame; "
+          f"inspected problems {len(hacc):,}, attempted {len(hc):,}")
 print(f"estimation frame: {len(est):,} lots | caller complaints with an outcome: {len(c_all):,} | accessed, inspectors with >= {MIN_INSPECTOR_CASES} cases: {len(acc):,}")
 '''
 
@@ -252,14 +272,111 @@ for d, dlab in DEMOS.items():
     del m; gc.collect()
 ''')
 
+
+sec("Raw HPD rates by tract quintile",
+    "HPD complaints and HPD violations per 100 lots per year, and the HPD hit rate (violations issued "
+    "among inspected problems) and no-access rate, by lot-weighted tract quintile, before any adjustment "
+    "(`neighborhood_hpd_descriptives.csv`).",
+    r"""
+d = committed("neighborhood_hpd_descriptives.csv")
+a = d[d.variable == "all"].iloc[0]
+print(f"RESULT all lots: HPD complaints {a.hpd_complaints_per100_yr:.1f} and HPD violations {a.hpd_violations_per100_yr:.1f} per 100 lots per year; "
+      f"hit rate {a.hpd_hit_rate*100:.1f}%; no-access rate {a.hpd_noaccess_rate*100:.1f}%")
+for var, raw in [("poverty", "tract_poverty"), ("foreign_born", "tract_foreign_born"), ("black", "tract_pct_black"), ("income", "med_income")]:
+    q = pd.qcut(est[raw].rank(method="first"), 5, labels=[1, 2, 3, 4, 5]).astype(int)
+    hq = hc.merge(pd.DataFrame({"bbl_key": est["bbl_key"], "_q": q.values}), on="bbl_key")
+    rows = []
+    for k in range(1, 6):
+        g = est[q.values == k]; gq = hq[hq["_q"] == k]; ak = gq[gq["outcome"] != "no_access"]
+        rows.append(dict(quintile=k, hpd_complaints_per100_yr=g["n_hpd_complaints"].sum()/len(g)/YEARS_C*100,
+                         hpd_violations_per100_yr=g["n_hpd_violations"].sum()/len(g)/YEARS_C*100,
+                         hpd_hit_rate=(ak["outcome"] == "violation").mean(), hpd_noaccess_rate=(gq["outcome"] == "no_access").mean()))
+    t = pd.DataFrame(rows); lo, hi = t.iloc[0], t.iloc[-1]
+    print(f"RESULT {var}: bottom quintile HPD complaints {lo.hpd_complaints_per100_yr:.1f} vs top quintile {hi.hpd_complaints_per100_yr:.1f} per 100 lots/yr; "
+          f"HPD violations {lo.hpd_violations_per100_yr:.1f} vs {hi.hpd_violations_per100_yr:.1f}; hit rate {lo.hpd_hit_rate*100:.1f}% vs {hi.hpd_hit_rate*100:.1f}%; "
+          f"no access {lo.hpd_noaccess_rate*100:.1f}% vs {hi.hpd_noaccess_rate*100:.1f}%")
+    cm = d[d.variable == var].sort_values("quintile")
+    assert np.allclose(cm["hpd_complaints_per100_yr"].values, t["hpd_complaints_per100_yr"].values, atol=0.05)
+""")
+
+for y, ylab, heading in [
+    ("n_hpd_complaints", "HPD complaints", "HPD complaint gradients by tract demographics"),
+    ("n_hpd_violations", "HPD violations", "HPD violation gradients by tract demographics"),
+]:
+    sec(heading,
+        f"Poisson pseudo-maximum-likelihood models of {ylab} per lot on each tract demographic, one at a "
+        "time, with the same fixed effects and controls as the DOB models; a third estimate restricts to "
+        "lots with three or more residential units, where HPD's complaint system mainly operates "
+        "(`neighborhood_gradients.py`, `neighborhood_hpd_gradients.csv`).",
+        rf"""
+y = "{y}"
+sub3 = est[est["unitsres"] >= 3]
+for d, dlab in DEMOS.items():
+    out = {{}}
+    for spec, rhs in [("total", d), ("direct", f"{{d}} + {{X}}")]:
+        m = pf.fepois(f"{{y}} ~ {{rhs}} | {{FE_B}}", data=est, vcov=VCOV, lean=True, store_data=False, copy_data=False)
+        r = irr_row(m, d); out[spec] = r; REFIT[("hpd", y, spec, d)] = r["pct_change"]
+    m = pf.fepois(f"{{y}} ~ {{d}} | {{FE_B}}", data=sub3, vcov=VCOV, lean=True, store_data=False, copy_data=False)
+    r3 = irr_row(m, d); REFIT[("hpd", y, "total3", d)] = r3["pct_change"]
+    t, dr = out["total"], out["direct"]
+    print(f"RESULT {{dlab}}: total {{t['pct_change']:+.1f}}% [{{t['pct_lo']:+.1f}}, {{t['pct_hi']:+.1f}}]   "
+          f"direct {{dr['pct_change']:+.1f}}% [{{dr['pct_lo']:+.1f}}, {{dr['pct_hi']:+.1f}}]   3+ units total {{r3['pct_change']:+.1f}}% [{{r3['pct_lo']:+.1f}}, {{r3['pct_hi']:+.1f}}]   N={{t['n']:,}}")
+    del m; gc.collect()
+""")
+
+sec("HPD hit rate by tract demographics",
+    "Problem-level linear probability model: HPD issued a violation (percentage points) among inspected "
+    "problems, on each tract demographic, with fixed effects for the problem's major category, unit-count, "
+    "commercial-unit, and borough, then adding the building-stock controls. HPD data carry no inspector "
+    "identifier. Standard errors clustered by tract (`neighborhood_hpd_hitrate.csv`).",
+    r"""
+print(f"baseline HPD hit rate: {hacc['viol100'].mean():.1f}%  N={len(hacc):,}")
+for d, dlab in DEMOS.items():
+    out = {}
+    for spec, rhs in [("hpd_hit_base", d), ("hpd_hit_controls", f"{d} + {X}")]:
+        m = pf.feols(f"viol100 ~ {rhs} | {FE_P}", data=hacc, vcov=VCOV, lean=True, store_data=False, copy_data=False)
+        r = pp_row(m, d); out[spec] = r; REFIT[("hpdhit", spec, d)] = r["estimate"]
+    print(f"RESULT {dlab}: base {out['hpd_hit_base']['estimate']:+.2f} pp [{out['hpd_hit_base']['ci_lo']:+.2f}, {out['hpd_hit_base']['ci_hi']:+.2f}]   "
+          f"with building controls {out['hpd_hit_controls']['estimate']:+.2f} pp [{out['hpd_hit_controls']['ci_lo']:+.2f}, {out['hpd_hit_controls']['ci_hi']:+.2f}]")
+    del m; gc.collect()
+""")
+
+sec("HPD no access by tract demographics",
+    "Problem-level linear probability model: the HPD inspection ended without access (percentage points) "
+    "among problems where an inspection was attempted, on each tract demographic, with and without the "
+    "building-stock controls (`neighborhood_hpd_hitrate.csv`).",
+    r"""
+print(f"baseline HPD no-access rate: {hc['noaccess100'].mean():.1f}%  N={len(hc):,}")
+for d, dlab in DEMOS.items():
+    out = {}
+    for spec, rhs in [("hpd_noaccess_base", d), ("hpd_noaccess_controls", f"{d} + {X}")]:
+        m = pf.feols(f"noaccess100 ~ {rhs} | {FE_P}", data=hc, vcov=VCOV, lean=True, store_data=False, copy_data=False)
+        r = pp_row(m, d); out[spec] = r; REFIT[("hpdhit", spec, d)] = r["estimate"]
+    print(f"RESULT {dlab}: base {out['hpd_noaccess_base']['estimate']:+.2f} pp [{out['hpd_noaccess_base']['ci_lo']:+.2f}, {out['hpd_noaccess_base']['ci_hi']:+.2f}]   "
+          f"with building controls {out['hpd_noaccess_controls']['estimate']:+.2f} pp [{out['hpd_noaccess_controls']['ci_lo']:+.2f}, {out['hpd_noaccess_controls']['ci_hi']:+.2f}]")
+    del m; gc.collect()
+""")
+
 sec("Verification against committed estimates",
     "Every refit above compared with the committed CSVs written by `neighborhood_gradients.py`. "
     "Refits use the same committed data and code, so they should agree to rounding.",
     r'''
 g = committed("neighborhood_gradients.csv"); g = g[g.entry == "bivariate"]
 h = committed("neighborhood_hitrate.csv"); dec = committed("neighborhood_decomposition.csv")
+hg = committed("neighborhood_hpd_gradients.csv") if HAVE_HPD else None
+hh = committed("neighborhood_hpd_hitrate.csv") if HAVE_HPD else None
 rows = []
-for (kind, spec, d), v in REFIT.items():
+for key, v in REFIT.items():
+    if key[0] == "hpd":
+        _, y, spec, d = key
+        sub = hg[(hg.outcome == y) & (hg.term == d)]
+        c = float(sub[(sub.spec == ("total" if spec == "total3" else spec)) & (sub["sample"] == ("3+ units" if spec == "total3" else "all lots"))]["pct_change"].iloc[0]); tol = 0.05
+        rows.append({"result": f"hpd / {y} / {spec} / {d}", "refit": round(v, 3), "committed": round(c, 3), "check": "PASS" if abs(v - c) <= tol else "REVIEW"}); continue
+    if key[0] == "hpdhit":
+        _, spec, d = key
+        c = float(hh[(hh.spec == spec) & (hh.term == d)]["estimate"].iloc[0]); tol = 0.005
+        rows.append({"result": f"hpd / {spec} / {d}", "refit": round(v, 3), "committed": round(c, 3), "check": "PASS" if abs(v - c) <= tol else "REVIEW"}); continue
+    kind, spec, d = key
     if kind in OUTCOMES:
         c = float(g[(g.outcome == kind) & (g.spec == spec) & (g.term == d)]["pct_change"].iloc[0]); tol = 0.05
     elif kind == "gelbach":
