@@ -105,7 +105,7 @@ def forest():
 def decomposition():
     d = pd.read_csv(RM / "neighborhood_decomposition.csv")
     comps = ["via_era", "via_value", "via_ownership", "via_use_size", "via_history", "direct"]
-    fig, ax = plt.subplots(figsize=(11.5, 6.4), gridspec_kw=dict(left=0.27, right=0.98, top=0.80, bottom=0.12))
+    fig, ax = plt.subplots(figsize=(11.5, 7.0), gridspec_kw=dict(left=0.27, right=0.98, top=0.80, bottom=0.21))
     _style(ax)
     y = np.arange(len(ORDER))[::-1]
     for i, term in enumerate(ORDER):
@@ -122,12 +122,12 @@ def decomposition():
     ax.set_yticks(y); ax.set_yticklabels([LABEL[t] for t in ORDER], fontsize=10.5); ax.tick_params(axis="y", length=0)
     ax.set_xlabel("Change in the probability of any caller complaint, 2020 to May 2026 (percentage points)", fontsize=10)
     handles = [matplotlib.patches.Patch(color=GROUP_COLOR[c], label=GROUP_LABEL[c]) for c in comps]
-    handles.append(matplotlib.lines.Line2D([], [], marker="|", ms=14, mew=2, color=INK, ls="", label="total gradient"))
-    ax.legend(handles=handles, loc="lower right", fontsize=9, frameon=False, ncol=2)
-    fig.text(0.02, 0.945, "How much of each neighborhood gradient runs through the buildings", fontsize=15, weight="bold", color=INK)
+    handles.append(matplotlib.lines.Line2D([], [], marker="|", ms=14, mew=2, color=INK, ls="", label="total difference"))
+    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.13), fontsize=9, frameon=False, ncol=4)
+    fig.text(0.02, 0.945, "How much of each neighborhood difference in complaints the buildings account for", fontsize=15, weight="bold", color=INK)
     fig.text(0.02, 0.895, "Exact decomposition of the gap between the size-only and the fully controlled estimate (Gelbach 2016); "
              "colored segments sum to that gap,", fontsize=10, color=MUTED)
-    fig.text(0.02, 0.86, "grey is what remains with every building control in. Linear probability model, size, commercial-unit, and borough fixed effects.",
+    fig.text(0.02, 0.86, "grey is what remains with every building trait held fixed. Linear probability model, size, commercial-unit, and borough fixed effects.",
              fontsize=10, color=MUTED)
     out = ART / "neighborhood_decomposition.png"
     fig.savefig(out, dpi=200)
