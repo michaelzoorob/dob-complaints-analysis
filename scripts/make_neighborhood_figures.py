@@ -124,10 +124,10 @@ def decomposition():
     handles = [matplotlib.patches.Patch(color=GROUP_COLOR[c], label=GROUP_LABEL[c]) for c in comps]
     handles.append(matplotlib.lines.Line2D([], [], marker="|", ms=14, mew=2, color=INK, ls="", label="total difference"))
     ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.13), fontsize=9, frameon=False, ncol=4)
-    fig.text(0.02, 0.945, "How much of each neighborhood difference in complaints the buildings account for", fontsize=15, weight="bold", color=INK)
+    fig.text(0.02, 0.945, "How much of each neighborhood difference in complaints is associated with building characteristics", fontsize=15, weight="bold", color=INK)
     fig.text(0.02, 0.895, "Exact decomposition of the gap between the size-only and the fully controlled estimate (Gelbach 2016); "
              "colored segments sum to that gap,", fontsize=10, color=MUTED)
-    fig.text(0.02, 0.86, "grey is what remains with every building trait held fixed. Linear probability model, size, commercial-unit, and borough fixed effects.",
+    fig.text(0.02, 0.86, "grey is what remains with every building characteristic held fixed. Linear probability model, size, commercial-unit, and borough fixed effects.",
              fontsize=10, color=MUTED)
     out = ART / "neighborhood_decomposition.png"
     fig.savefig(out, dpi=200)
