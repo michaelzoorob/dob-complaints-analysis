@@ -50,3 +50,4 @@ bis_validate.json
 data/dob_complaints.db.gz
 data/analysis/master_panel.csv
 data/analysis/spillover_frame.pkl
+data/analysis/risk_models/checkpoints/

@@ -1,0 +1,12 @@
+{
+ "Neighborhood panel and coverage": "Neighborhood-panel-and-coverage",
+ "Raw rates by tract quintile": "Raw-rates-by-tract-quintile",
+ "Caller complaint gradients by tract demographics": "Caller-complaint-gradients-by-tract-demographics",
+ "ECB citation gradients by tract demographics": "ECB-citation-gradients-by-tract-demographics",
+ "DOB violation record gradients by tract demographics": "DOB-violation-record-gradients-by-tract-demographics",
+ "Agency initiated complaint gradients by tract demographics": "Agency-initiated-complaint-gradients-by-tract-demographics",
+ "Building stock decomposition of the caller complaint gradient": "Building-stock-decomposition-of-the-caller-complaint-gradient",
+ "Hit rate by tract demographics with inspector fixed effects": "Hit-rate-by-tract-demographics-with-inspector-fixed-effects",
+ "No access by tract demographics": "No-access-by-tract-demographics",
+ "Verification against committed estimates": "Verification-against-committed-estimates"
+}

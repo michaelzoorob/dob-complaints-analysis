@@ -5,7 +5,7 @@ Fig 1: four-panel forest plot — complaints (PPML, % change), ECB citations
        (PPML, % change), DOB violation records (deduplicated union PPML,
        % change), and violations per inspection (pp, category-adjusted),
        all within census tract x building-size bin.
-Fig 2: scatter of complaint effects against per-inspection violation effects.
+Fig 2: scatter of adjusted complaint differences against per-inspection violation differences.
 
 Reads data/analysis/risk_models/tidy_estimates.csv.
 Writes data/analysis/blog_posts/artifacts/risk_forest.png, risk_two_margin.png
@@ -217,8 +217,8 @@ def two_margin(df: pd.DataFrame):
 
     ax.set_xlim(-60, 135)
     ax.set_ylim(-8.4, 8.4)
-    ax.set_xlabel("Effect on complaints received (%), same size & tract", fontsize=10)
-    ax.set_ylabel("Effect on violations per inspection (pp)", fontsize=10)
+    ax.set_xlabel("Adjusted difference in complaints received (%), same size & tract", fontsize=10)
+    ax.set_ylabel("Adjusted difference in violations per inspection (pp)", fontsize=10)
     ax.tick_params(labelsize=9)
     ax.spines[["top", "right"]].set_visible(False)
     ax.set_title("Complaints received vs. violations per inspection, by risk factor",

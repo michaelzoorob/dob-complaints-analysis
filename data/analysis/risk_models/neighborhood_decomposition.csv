@@ -1,0 +1,57 @@
+term,term_label,component,points,ci_lo,ci_hi,share_of_total,n,outcome,fe
+tract_poverty10,Tract poverty rate (+10 pp),total,1.2251687635435997,0.9246608004588196,1.52567672662838,1.0,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_poverty10,Tract poverty rate (+10 pp),direct,0.6793322262242149,0.40639923522504534,0.9522652172233843,0.5544805307142812,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_poverty10,Tract poverty rate (+10 pp),via_era,0.07291954063724353,,,0.05951795606209851,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_poverty10,Tract poverty rate (+10 pp),via_value,0.04341041706120372,,,0.03543219379479298,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_poverty10,Tract poverty rate (+10 pp),via_ownership,0.2996575427236314,,,0.24458470672801116,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_poverty10,Tract poverty rate (+10 pp),via_use_size,0.00155447738274368,,,0.0012687863329518857,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_poverty10,Tract poverty rate (+10 pp),via_history,0.12829455951448332,,,0.10471582636779961,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_log_income_z,Tract log median income (+1 SD),total,-0.9448733796208979,-1.221903438064919,-0.6678433211768768,1.0,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_log_income_z,Tract log median income (+1 SD),direct,-0.6758781588387175,-0.9437162015236005,-0.40804011615383445,0.7153108272664993,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_log_income_z,Tract log median income (+1 SD),via_era,0.000771085854795618,,,-0.0008160732130108195,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_log_income_z,Tract log median income (+1 SD),via_value,-0.03959133007714428,,,0.04190120171766201,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_log_income_z,Tract log median income (+1 SD),via_ownership,-0.21596727917958486,,,0.22856742907312644,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_log_income_z,Tract log median income (+1 SD),via_use_size,0.05167827792296483,,,-0.05469333673438783,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_log_income_z,Tract log median income (+1 SD),via_history,-0.0658859753031699,,,0.06972995189006666,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_renter10,Tract renter share (+10 pp),total,0.5956315682487227,0.4494285222335135,0.7418346142639318,1.0,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_renter10,Tract renter share (+10 pp),direct,0.2370648877880727,0.08660295360778733,0.3875268219683581,0.39800591577960087,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_renter10,Tract renter share (+10 pp),via_era,0.12162729026312188,,,0.2041988651151092,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_renter10,Tract renter share (+10 pp),via_value,0.03524728743405341,,,0.059176325287270404,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_renter10,Tract renter share (+10 pp),via_ownership,0.12290557452051276,,,0.2063449640217694,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_renter10,Tract renter share (+10 pp),via_use_size,0.004849667355944565,,,0.008142058974818222,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_renter10,Tract renter share (+10 pp),via_history,0.07393686088705215,,,0.12413187082149034,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_foreign10,Tract foreign-born share (+10 pp),total,1.2329819456229107,0.9514860036827201,1.5144778875631015,1.0,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_foreign10,Tract foreign-born share (+10 pp),direct,1.2551129687845244,0.9948891139927024,1.5153368235763462,1.0179491867177608,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_foreign10,Tract foreign-born share (+10 pp),via_era,0.01430950432235912,,,0.011605607343366136,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_foreign10,Tract foreign-born share (+10 pp),via_value,0.009351824779965908,,,0.007584721587501675,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_foreign10,Tract foreign-born share (+10 pp),via_ownership,-0.02567110427191494,,,-0.020820340770639365,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_foreign10,Tract foreign-born share (+10 pp),via_use_size,-0.058161323885987395,,,-0.04717126969495397,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_foreign10,Tract foreign-born share (+10 pp),via_history,0.038040075893892744,,,0.030852094816907188,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_overcrowd10,Tract overcrowded-household share (+10 pp),total,1.7747660393882165,1.250437759632434,2.299094319143999,1.0,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_overcrowd10,Tract overcrowded-household share (+10 pp),direct,1.3030559168921012,0.812678882102462,1.7934329516817404,0.7342127852194424,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_overcrowd10,Tract overcrowded-household share (+10 pp),via_era,0.19813491800003732,,,0.11164002105220407,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_overcrowd10,Tract overcrowded-household share (+10 pp),via_value,0.04696286013648943,,,0.02646143722283423,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_overcrowd10,Tract overcrowded-household share (+10 pp),via_ownership,0.055561186906360624,,,0.03130620356332333,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_overcrowd10,Tract overcrowded-household share (+10 pp),via_use_size,0.02493986862565624,,,0.014052482452421343,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_overcrowd10,Tract overcrowded-household share (+10 pp),via_history,0.1461112888276151,,,0.082327070489799,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_black10,Tract Black share (+10 pp),total,-0.2344599408997116,-0.33397583724162794,-0.13494404455779527,1.0,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_black10,Tract Black share (+10 pp),direct,-0.23186395663445988,-0.3239170930694404,-0.1398108201994794,0.9889278131893665,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_black10,Tract Black share (+10 pp),via_era,-0.04184121053189689,,,0.1784578225659203,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_black10,Tract Black share (+10 pp),via_value,-0.0009131449005289553,,,0.0038946734227811902,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_black10,Tract Black share (+10 pp),via_ownership,0.07048493587557252,,,-0.30062677489849704,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_black10,Tract Black share (+10 pp),via_use_size,-0.020474172619699128,,,0.08732482206184977,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_black10,Tract Black share (+10 pp),via_history,-0.009852392088671542,,,0.04202164365846115,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_hispanic10,Tract Hispanic share (+10 pp),total,0.6627744426037514,0.5174282917646207,0.8081205934428821,1.0,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_hispanic10,Tract Hispanic share (+10 pp),direct,0.32218939357644466,0.17908271178216378,0.46529607537072554,0.4861222353576327,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_hispanic10,Tract Hispanic share (+10 pp),via_era,0.15222050932715803,,,0.22967166435861666,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_hispanic10,Tract Hispanic share (+10 pp),via_value,0.02788305440184946,,,0.04207020157915129,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_hispanic10,Tract Hispanic share (+10 pp),via_ownership,0.11348802030031852,,,0.17123173889215407,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_hispanic10,Tract Hispanic share (+10 pp),via_use_size,-0.014540447522485822,,,-0.021938757121295675,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_hispanic10,Tract Hispanic share (+10 pp),via_history,0.061533912520478275,,,0.09284291693375864,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_asian10,Tract Asian share (+10 pp),total,0.745837657675078,0.5534979413609482,0.9381773739892079,1.0,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_asian10,Tract Asian share (+10 pp),direct,0.8185886443747937,0.6435236607742421,0.9936536279753454,1.0975426568383457,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_asian10,Tract Asian share (+10 pp),via_era,-0.04266279325996467,,,-0.05720117886371271,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_asian10,Tract Asian share (+10 pp),via_value,-0.0017278002070875748,,,-0.002316590198024415,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_asian10,Tract Asian share (+10 pp),via_ownership,-0.051630170222621584,,,-0.06922440787391043,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_asian10,Tract Asian share (+10 pp),via_use_size,0.0007571817811916214,,,0.001015209909823949,760431,any caller complaint (pp),size_bin + comm_bin + borocode
+tract_asian10,Tract Asian share (+10 pp),via_history,0.02251259520878543,,,0.030184310187503265,760431,any caller complaint (pp),size_bin + comm_bin + borocode
